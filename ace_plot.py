@@ -40,6 +40,22 @@ def plot_training_curves(
     _write_png(out_png, img, width, height)
 
 
+def plot_accuracy_curve(
+    values: list[float],
+    out_png: str,
+    width: int = 900,
+    height: int = 420,
+) -> None:
+    xs = list(range(1, len(values) + 1))
+    img = _new_image(width, height, (255, 255, 255))
+
+    pad = 40
+    rect = (pad, pad, width - pad, height - pad)
+    _draw_panel(img, width, rect, xs, values, (30, 160, 90), y_min=0.0, y_max=1.0)
+
+    _write_png(out_png, img, width, height)
+
+
 def _draw_panel(
     img: bytearray,
     width: int,

@@ -1,0 +1,18 @@
+name: ace-plus-plus
+version: "1.0.0"
+description: >
+  Partially observable multi-agent RL environment where LLM agents must infer
+  hidden market conditions through structured API interactions, model world state
+  via explicit belief logging, and adapt strategy over time.
+entry: app.py
+theme: multi-agent
+tags:
+  - multi-agent
+  - world-modeling
+  - tool-use
+  - hidden-state
+  - POMDP
+  - inference-reward
+reward_type: dense
+observation_type: partial
+action_type: structured-json

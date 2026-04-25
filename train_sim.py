@@ -68,6 +68,7 @@ def simulate(
     episode_logs: list[dict] = []
 
     for ep in range(n_episodes):
+        # Demo phases intentionally show a clear random -> mixed -> smart arc.
         if ep < int(0.33 * n_episodes):
             phase = "early"
         elif ep < int(0.66 * n_episodes):
@@ -136,10 +137,12 @@ def _plot_curves(episode_logs: list[dict], out_png: str) -> None:
     fig.suptitle("ACE++ Learnability Simulation (Deterministic)")
 
     ax1.plot(xs, rewards, linewidth=2)
+    ax1.set_title("Learning Progress (Reward)")
     ax1.set_ylabel("Learning Progress (Reward)")
     ax1.grid(True, alpha=0.3)
 
     ax2.plot(xs, accs, linewidth=2)
+    ax2.set_title("Hidden State Inference Accuracy")
     ax2.set_xlabel("Episode")
     ax2.set_ylabel("Hidden State Inference Accuracy")
     ax2.set_ylim(0.0, 1.0)

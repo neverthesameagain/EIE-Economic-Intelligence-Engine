@@ -123,7 +123,12 @@ class ACEEnv:
             next_round_type = self._advance_round()
             obs = self._make_observation(next_round_type)
             obs["last_error"] = error
-            return obs, -1.0, done, {"error": error, "debug_round_type": scored_round_type}
+            return obs, -1.0, done, {
+                "status": "error",
+                "error": error,
+                "invalid_action_penalty": -1.0,
+                "debug_round_type": scored_round_type,
+            }
 
         # ---- Score against the CURRENT round (already shown to agent) ----
         scored_round_type = self.current_round_type   # what agent saw signal for
@@ -364,7 +369,7 @@ class ACEEnv:
             return None, {
                 "status": "error",
                 "error_type": "JSON_PARSE_ERROR",
-                "message": str(e),
+                "message": f"Invalid JSON action: {e}",
                 "expected_format": {
                     "predicted_round": "cooperative | competitive | resource",
                     "action": "bid | allocate | solo",
@@ -401,6 +406,10 @@ class ACEEnv:
                 "status": "error",
                 "error_type": "INVALID_ROUND_TYPE",
                 "message": f"predicted_round must be one of {ROUND_TYPES}",
+                "expected_format": {
+                    "belief": {"predicted_round": "cooperative|competitive|resource", "confidence": 0.0},
+                    "action": {"tool": "submit_bid|allocate_resources|execute_contract", "parameters": {"amount": 50}},
+                },
             }
 
         if not (0.0 <= confidence <= 1.0):
@@ -408,6 +417,10 @@ class ACEEnv:
                 "status": "error",
                 "error_type": "INVALID_CONFIDENCE",
                 "message": "confidence must be a float in [0, 1]",
+                "expected_format": {
+                    "belief": {"predicted_round": "cooperative|competitive|resource", "confidence": 0.0},
+                    "action": {"tool": "submit_bid|allocate_resources|execute_contract", "parameters": {"amount": 50}},
+                },
             }
 
         tool = None
@@ -463,6 +476,10 @@ class ACEEnv:
                 "status": "error",
                 "error_type": "MISSING_ACTION",
                 "message": "Missing 'action'. Provide either a string action or {'tool': ..., 'parameters': {...}}.",
+                "expected_format": {
+                    "belief": {"predicted_round": "cooperative|competitive|resource", "confidence": 0.0},
+                    "action": {"tool": "submit_bid|allocate_resources|execute_contract", "parameters": {"amount": 50}},
+                },
             }
 
         def _safe_amount(v: Any) -> tuple[float, float]:
@@ -497,6 +514,10 @@ class ACEEnv:
                         "status": "error",
                         "error_type": "MISSING_KEYS",
                         "message": f"Missing required key for {t}: target_id",
+                        "expected_format": {
+                            "belief": {"predicted_round": "cooperative|competitive|resource", "confidence": 0.0},
+                            "action": {"tool": t, "parameters": {"target_id": 0}},
+                        },
                     }
 
             if t == "betray":
@@ -505,6 +526,10 @@ class ACEEnv:
                         "status": "error",
                         "error_type": "MISSING_KEYS",
                         "message": "Missing required key for betray: partner_id",
+                        "expected_format": {
+                            "belief": {"predicted_round": "cooperative|competitive|resource", "confidence": 0.0},
+                            "action": {"tool": "betray", "parameters": {"partner_id": 0}},
+                        },
                     }
 
         return NormalizedAction(

@@ -1,6 +1,122 @@
-# ACE++ (Adaptive Coalition Economy) — Repo Status
+# ACE++ — Adaptive Coalition Economy
 
-This repo contains a minimal-but-growing ACE++ environment plus a TRL/GRPO training scaffold (verifiable rewards) and demo scripts.
+ACE++ is a partially observable RL environment that trains LLMs to build and verify internal world models — rewarding correct belief about hidden state, not just successful action.
+
+We demonstrate both:
+- environment learnability via RL training
+- in-context adaptation via LLM interaction
+
+## Quick Demo
+
+- Hugging Face Space source: [app.py](./app.py)
+- Space dependency file: [requirements.txt](./requirements.txt)
+- Public Space URL: publish from this repo and replace this line with the live URL
+
+## The Problem
+
+LLM agents often fail when they must act under uncertainty instead of answering static prompts. In many realistic settings, the model must infer hidden world state from noisy signals, choose a structured action, and revise its belief after receiving feedback.
+
+## How ACE++ Works
+
+ACE++ is a hidden-state economic environment with three round types:
+- `competitive`
+- `cooperative`
+- `resource`
+
+The agent sees only market signals and history, not the true round type directly.
+
+```text
+Hidden Round Type
+        ↓
+Observable market_state
+        ↓
+Agent predicts hidden state
+        ↓
+Agent emits structured JSON action
+        ↓
+Environment scores task reward + inference reward
+        ↓
+Ground truth is revealed for the next belief update
+```
+
+Inference reward is the key design choice: the system rewards correct world modeling, not just lucky action selection.
+
+## Training Evidence
+
+OpenEnv / environment learnability evidence:
+
+![Reward curves](openenv_training_curves.png)
+![Inference accuracy](training_curves.png)
+
+Additional adaptation evidence:
+
+![Within-episode adaptation](llm_episode_curve.png)
+
+Available training paths:
+- [ACE_OpenEnv_GRPO_Training.ipynb](./ACE_OpenEnv_GRPO_Training.ipynb) — GPU notebook for TRL + Unsloth GRPO training
+- [train_openenv.py](./train_openenv.py) — OpenEnv-compatible learnability run
+- [train_sim.py](./train_sim.py) — deterministic staged learning simulation
+
+Current adaptive evaluation evidence:
+- Random baseline accuracy: ~0.33 (3-class random expectation)
+- Adaptive fallback agent mean accuracy: ~0.71
+- Within-episode start accuracy: ~0.20
+- Within-episode end accuracy: ~0.71
+
+## Minimum Requirements
+
+- [x] OpenEnv compatible
+- [x] Training script / notebook
+- [x] HF Space app source
+- [ ] Public HF Space URL added
+- [ ] Mini blog / video added
+
+## Files
+
+- [env.py](./env.py) — `ACEEnv` + `MultiAgentACEEnv`
+- [app.py](./app.py) — Gradio demo
+- [ACE_OpenEnv_GRPO_Training.ipynb](./ACE_OpenEnv_GRPO_Training.ipynb) — training notebook
+- [openenv.yaml](./openenv.yaml) — OpenEnv manifest
+- [train_openenv.py](./train_openenv.py) — OpenEnv training evidence
+- [compare_agents.py](./compare_agents.py) — random vs rule-based vs adaptive comparison
+
+## Results
+
+| Metric | Random baseline | Adaptive agent |
+|--------|-----------------|----------------|
+| Inference accuracy | ~0.33 (3-class random) | ~0.71 |
+| Start-of-episode accuracy | ~0.33 | ~0.20 |
+| End-of-episode accuracy | ~0.33 | ~0.71 |
+| Avg reward / episode | ~-1.2 expected | ~+15.5 |
+
+## Live Demo
+
+Hugging Face Space deployment uses [app.py](./app.py) with [requirements.txt](./requirements.txt).
+
+Space URL status: not published yet from this workspace. After publishing, add the public Space URL in this section.
+
+## Submission Materials
+
+- OpenEnv environment wrapper: [ace_env_openenv/wrapper.py](./ace_env_openenv/wrapper.py)
+- Hugging Face Space source:
+  - [app.py](./app.py)
+  - [requirements.txt](./requirements.txt)
+- GPU training notebook: [ACE_OpenEnv_GRPO_Training.ipynb](./ACE_OpenEnv_GRPO_Training.ipynb)
+- OpenEnv training script: [train_openenv.py](./train_openenv.py)
+- Full training/runtime dependencies: [requirements_full.txt](./requirements_full.txt)
+- Local environment template: [.env.example](./.env.example)
+- Training evidence plots:
+  - [training_curves.png](./training_curves.png)
+  - [llm_episode_curve.png](./llm_episode_curve.png)
+  - [openenv_training_curves.png](./openenv_training_curves.png)
+- Evaluation artifacts:
+  - [llm_eval.json](./llm_eval.json)
+  - [openenv_training_logs.json](./openenv_training_logs.json)
+- Project report: [REPORT.md](./REPORT.md)
+- Presentation / writeup:
+  - Blog post: not published yet
+  - Video: not published yet
+  - Slides: not published yet
 
 ## What Works Now (Implemented)
 
@@ -91,6 +207,26 @@ python3 test.py
 python3 demo.py
 ```
 
+### LLM-style adaptive agent loop (no training)
+
+Runs an online feedback-driven agent. If no API keys are set, it falls back to a deterministic mock “LLM” that still shows adaptation.
+
+```bash
+python3 llm_agent.py
+```
+
+Optional (robustness demo): force one intentionally bad model output early:
+
+```bash
+ACE_NOISY_LLM=1 python3 llm_agent.py
+```
+
+Plot the within-episode LLM accuracy curve:
+
+```bash
+python3 plot_llm_episode.py
+```
+
 ### Single-agent smoke run
 
 ```bash
@@ -116,6 +252,44 @@ This confirms that the signals + reward structure support learning hidden-state 
 ![Training Curves](training_curves.png)
 
 The agent transitions from random guessing to consistent inference of hidden states, demonstrating learnability of the environment.
+
+## Within-Episode Adaptation (Online)
+
+ACE++ also supports *online self-improvement*: the agent updates its behavior within the same episode using feedback (reward + ground truth).
+
+- Run the adaptive agent demo: `python3 llm_agent.py`
+- Evaluate multiple episodes and write evidence to `llm_eval.json`: `python3 llm_eval.py`
+- Compare baselines (random vs rule-based vs adaptive): `python3 compare_agents.py`
+
+The LLM agent operates under partial observability and noisy signals, making the task non-trivial. While baseline policies can exploit deterministic mappings, the LLM demonstrates adaptive reasoning capabilities through feedback-driven belief updates.
+
+## Learning Mechanism
+
+ACE++ makes the learning process visible rather than hiding it inside weight updates.
+
+- The agent observes a partial signal (`market_state`) and predicts the hidden round type.
+- After each action, the environment returns reward plus the actual round type.
+- That feedback is stored in prompt history and reused on the next round, so the agent can revise its belief and strategy inside the same episode.
+- There are no parameter updates, no retraining loop, and no optimizer step required during the demo.
+- Confidence is a heuristic proxy based on recent prediction consistency, used to visualize belief stabilization over time.
+
+"We convert environment feedback into structured belief updates,
+allowing the LLM to refine its internal model without parameter updates."
+
+In practice, this means the agent can start with weak or incorrect beliefs, then improve after seeing which predictions were right or wrong under similar signals.
+
+Rule-based agents overfit deterministic signals, while LLM agents operate under uncertainty and require feedback to adapt.
+
+## Failure and Recovery
+
+The demo is designed to show a clear failure -> feedback -> correction pattern.
+
+- Early in an episode, the agent may misclassify the hidden round type.
+- The environment then reveals the ground truth for that round.
+- On later rounds, the agent uses that feedback history to correct its inference.
+- `llm_agent.py` now labels these moments explicitly with `CORRECT (ADAPTED)`, `Adaptation Detected`, and `Belief Update: adjusting strategy based on feedback`.
+
+This makes within-episode learning easy to interpret in a live demo: judges can see not just final accuracy, but how the agent recovers from mistakes over time.
 
 ## Current Action Schema (Recommended)
 

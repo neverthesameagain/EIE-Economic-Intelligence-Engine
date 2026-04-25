@@ -3,4 +3,5 @@ __pycache__/
 # Virtual environments
 ai-lab-env/
 venv/
+.env
 .env/
