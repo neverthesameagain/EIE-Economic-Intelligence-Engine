@@ -1,8 +1,21 @@
+---
+title: ACEhack
+emoji: 🚀
+colorFrom: blue
+colorTo: purple
+sdk: gradio
+sdk_version: "4.0.0"
+python_version: "3.10"
+app_file: app.py
+pinned: false
+---
+
 # ACE++ — Adaptive Coalition Economy
 
 ACE++ is a partially observable RL environment that trains LLMs to build and verify internal world models — rewarding correct belief about hidden state, not just successful action.
 
 We demonstrate both:
+
 - environment learnability via RL training
 - in-context adaptation via LLM interaction
 
@@ -19,6 +32,7 @@ LLM agents often fail when they must act under uncertainty instead of answering 
 ## How ACE++ Works
 
 ACE++ is a hidden-state economic environment with three round types:
+
 - `competitive`
 - `cooperative`
 - `resource`
@@ -53,11 +67,13 @@ Additional adaptation evidence:
 ![Within-episode adaptation](llm_episode_curve.png)
 
 Available training paths:
+
 - [ACE_OpenEnv_GRPO_Training.ipynb](./ACE_OpenEnv_GRPO_Training.ipynb) — GPU notebook for TRL + Unsloth GRPO training
 - [train_openenv.py](./train_openenv.py) — OpenEnv-compatible learnability run
 - [train_sim.py](./train_sim.py) — deterministic staged learning simulation
 
 Current adaptive evaluation evidence:
+
 - Random baseline accuracy: ~0.33 (3-class random expectation)
 - Adaptive fallback agent mean accuracy: ~0.71
 - Within-episode start accuracy: ~0.20
@@ -65,9 +81,9 @@ Current adaptive evaluation evidence:
 
 ## Minimum Requirements
 
-- [x] OpenEnv compatible
-- [x] Training script / notebook
-- [x] HF Space app source
+- [X] OpenEnv compatible
+- [X] Training script / notebook
+- [X] HF Space app source
 - [ ] Public HF Space URL added
 - [ ] Mini blog / video added
 
@@ -82,12 +98,12 @@ Current adaptive evaluation evidence:
 
 ## Results
 
-| Metric | Random baseline | Adaptive agent |
-|--------|-----------------|----------------|
-| Inference accuracy | ~0.33 (3-class random) | ~0.71 |
-| Start-of-episode accuracy | ~0.33 | ~0.20 |
-| End-of-episode accuracy | ~0.33 | ~0.71 |
-| Avg reward / episode | ~-1.2 expected | ~+15.5 |
+| Metric                    | Random baseline        | Adaptive agent |
+| ------------------------- | ---------------------- | -------------- |
+| Inference accuracy        | ~0.33 (3-class random) | ~0.71          |
+| Start-of-episode accuracy | ~0.33                  | ~0.20          |
+| End-of-episode accuracy   | ~0.33                  | ~0.71          |
+| Avg reward / episode      | ~-1.2 expected         | ~+15.5         |
 
 ## Live Demo
 
@@ -304,6 +320,7 @@ This makes within-episode learning easy to interpret in a live demo: judges can 
 ```
 
 Notes:
+
 - `action` may be a single object or a list of tool calls.
 - The last tool call is treated as the “economic” action for task reward; coalition tools are processed first.
 
