@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.request
 from typing import Any
 
 
@@ -16,7 +17,9 @@ Given a real-world event, output ONLY valid JSON with:
 
 Allowed delta fields:
 oil_price, gold_price, food_index, energy_cost, interest_rate, inflation,
-gdp_growth, trade_tension, market_volatility, cooperation_index, resource_scarcity.
+gdp_growth, trade_tension, market_volatility, cooperation_index, resource_scarcity,
+liquidity_index, credit_spread, geopolitical_risk, supply_chain_stability,
+sector_energy, sector_agriculture, sector_finance, sector_manufacturing, sector_technology.
 
 Rules:
 1. Output ONLY JSON. No markdown.
@@ -41,6 +44,15 @@ DELTA_FIELDS = {
     "market_volatility",
     "cooperation_index",
     "resource_scarcity",
+    "liquidity_index",
+    "credit_spread",
+    "geopolitical_risk",
+    "supply_chain_stability",
+    "sector_energy",
+    "sector_agriculture",
+    "sector_finance",
+    "sector_manufacturing",
+    "sector_technology",
 }
 
 
@@ -48,19 +60,38 @@ def parse_event_payload(
     event_text: str,
     world_state_str: str = "",
     model: str = "claude-sonnet-4-20250514",
+    provider: str | None = None,
+    debug: bool = False,
 ) -> dict[str, Any]:
     """Return {deltas, confidence, causal_reasoning}; never raises."""
     if not event_text.strip():
         return {"deltas": {}, "confidence": 0.0, "causal_reasoning": "No event provided."}
 
     raw = ""
-    if os.getenv("ANTHROPIC_API_KEY"):
+    provider = (provider or os.getenv("LLM_PROVIDER", "fallback")).lower().strip()
+    if provider == "groq" and os.getenv("GROQ_API_KEY"):
+        try:
+            raw = call_groq_chat_completion(
+                [
+                    {"role": "system", "content": INJECT_SYSTEM_PROMPT},
+                    {
+                        "role": "user",
+                        "content": f"Current world state:\n{world_state_str}\n\nEvent: {event_text}",
+                    },
+                ],
+                model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                temperature=0.15,
+                max_tokens=360,
+            )
+        except Exception:
+            raw = ""
+    elif provider == "anthropic" and os.getenv("ANTHROPIC_API_KEY"):
         try:
             import anthropic
 
             client = anthropic.Anthropic()
             response = client.messages.create(
-                model=model,
+                model=os.getenv("ANTHROPIC_MODEL", model),
                 max_tokens=320,
                 system=INJECT_SYSTEM_PROMPT,
                 messages=[
@@ -74,6 +105,11 @@ def parse_event_payload(
         except Exception:
             raw = ""
 
+    if debug and raw:
+        print("\n[LLM RAW:event_injection]")
+        print(raw)
+        print("[/LLM RAW:event_injection]\n")
+
     if raw:
         parsed = _parse_json_payload(raw)
         if parsed is not None:
@@ -84,6 +120,51 @@ def parse_event_payload(
 
 def parse_event_to_deltas(event_text: str, world_state_str: str = "") -> dict[str, float]:
     return parse_event_payload(event_text, world_state_str)["deltas"]
+
+
+def call_groq_chat_completion(
+    messages: list[dict[str, str]],
+    *,
+    model: str,
+    temperature: float,
+    max_tokens: int,
+) -> str:
+    """Call Groq chat completions with SDK if available, otherwise plain HTTPS."""
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("GROQ_API_KEY is not configured.")
+    try:
+        from groq import Groq
+
+        client = Groq(api_key=api_key)
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        return response.choices[0].message.content or ""
+    except ModuleNotFoundError:
+        pass
+
+    payload = {
+        "model": model,
+        "messages": messages,
+        "temperature": temperature,
+        "max_tokens": max_tokens,
+    }
+    request = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=30) as response:
+        body = json.loads(response.read().decode("utf-8"))
+    return str(body["choices"][0]["message"]["content"])
 
 
 def describe_impact(deltas: dict[str, float], event_text: str, causal_reasoning: str = "") -> str:
@@ -102,6 +183,15 @@ def describe_impact(deltas: dict[str, float], event_text: str, causal_reasoning:
         "market_volatility": "Market volatility",
         "cooperation_index": "Cooperation willingness",
         "resource_scarcity": "Resource scarcity",
+        "liquidity_index": "Liquidity",
+        "credit_spread": "Credit spread",
+        "geopolitical_risk": "Geopolitical risk",
+        "supply_chain_stability": "Supply-chain stability",
+        "sector_energy": "Energy sector",
+        "sector_agriculture": "Agriculture sector",
+        "sector_finance": "Finance sector",
+        "sector_manufacturing": "Manufacturing sector",
+        "sector_technology": "Technology sector",
     }
     lines = [f"Economic impact of: '{event_text}'"]
     if causal_reasoning:
@@ -116,9 +206,19 @@ def describe_impact(deltas: dict[str, float], event_text: str, causal_reasoning:
 
 def _parse_json_payload(raw: str) -> dict[str, Any] | None:
     clean = re.sub(r"```(?:json)?", "", raw).strip().strip("`")
-    try:
-        obj = json.loads(clean)
-    except json.JSONDecodeError:
+    decoder = json.JSONDecoder()
+    obj = None
+    for idx, char in enumerate(clean):
+        if char != "{":
+            continue
+        try:
+            candidate, _ = decoder.raw_decode(clean[idx:])
+        except json.JSONDecodeError:
+            continue
+        if isinstance(candidate, dict):
+            obj = candidate
+            break
+    if obj is None:
         return None
     if not isinstance(obj, dict):
         return None
@@ -157,23 +257,64 @@ def _fallback_event_payload(event_text: str) -> dict[str, Any]:
                 "inflation": 0.025,
                 "trade_tension": 0.12,
                 "cooperation_index": -0.08,
+                "geopolitical_risk": 0.18,
+                "supply_chain_stability": -0.12,
+                "sector_energy": 0.25,
+                "sector_manufacturing": -0.08,
             }
         )
         reasons.append("Energy supply risk raises oil prices, costs, and uncertainty.")
     if any(word in text for word in ["drought", "food", "crop", "grain", "famine"]):
-        deltas.update({"food_index": 0.35, "resource_scarcity": 0.28, "market_volatility": 0.12})
+        deltas.update({
+            "food_index": 0.35,
+            "resource_scarcity": 0.28,
+            "market_volatility": 0.12,
+            "supply_chain_stability": -0.18,
+            "sector_agriculture": -0.3,
+        })
         reasons.append("Food supply disruption increases scarcity and commodity prices.")
     if any(word in text for word in ["peace", "ceasefire", "agreement", "cooperation", "climate pact"]):
-        deltas.update({"cooperation_index": 0.28, "trade_tension": -0.2, "market_volatility": -0.12})
+        deltas.update({
+            "cooperation_index": 0.28,
+            "trade_tension": -0.2,
+            "market_volatility": -0.12,
+            "geopolitical_risk": -0.18,
+            "supply_chain_stability": 0.12,
+        })
         reasons.append("Diplomatic cooperation lowers tension and improves coordination incentives.")
     if any(word in text for word in ["rate", "central bank", "basis points", "inflation hike"]):
-        deltas.update({"interest_rate": 0.0075, "market_volatility": 0.12, "gdp_growth": -0.015, "gold_price": -0.04})
+        deltas.update({
+            "interest_rate": 0.0075,
+            "market_volatility": 0.12,
+            "gdp_growth": -0.015,
+            "gold_price": -0.04,
+            "liquidity_index": -0.12,
+            "credit_spread": 0.1,
+            "sector_finance": -0.08,
+        })
         reasons.append("Tighter monetary policy slows growth and increases market uncertainty.")
     if any(word in text for word in ["crash", "recession", "bank failure", "panic"]):
-        deltas.update({"market_volatility": 0.35, "gdp_growth": -0.06, "gold_price": 0.2, "cooperation_index": -0.06})
+        deltas.update({
+            "market_volatility": 0.35,
+            "gdp_growth": -0.06,
+            "gold_price": 0.2,
+            "cooperation_index": -0.06,
+            "liquidity_index": -0.25,
+            "credit_spread": 0.2,
+            "sector_finance": -0.35,
+            "sector_technology": -0.2,
+        })
         reasons.append("Financial stress increases volatility and defensive positioning.")
     if any(word in text for word in ["trade war", "tariff", "sanction", "embargo"]):
-        deltas.update({"trade_tension": 0.35, "market_volatility": 0.2, "cooperation_index": -0.25, "resource_scarcity": 0.15})
+        deltas.update({
+            "trade_tension": 0.35,
+            "market_volatility": 0.2,
+            "cooperation_index": -0.25,
+            "resource_scarcity": 0.15,
+            "geopolitical_risk": 0.22,
+            "supply_chain_stability": -0.18,
+            "sector_manufacturing": -0.18,
+        })
         reasons.append("Trade conflict reduces cooperation and raises supply friction.")
 
     if not deltas:

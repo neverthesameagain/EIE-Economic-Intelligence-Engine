@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import random
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -30,12 +29,16 @@ class AgentProfile:
     stake_cooperation: float
     risk_tolerance: float
     resources: float = 100.0
+    balance_sheet: dict[str, float] = field(default_factory=lambda: {"cash": 70.0, "debt": 20.0, "assets": 50.0})
+    portfolio: dict[str, float] = field(default_factory=dict)
+    beliefs: dict[str, float] = field(default_factory=lambda: {rt: 1.0 / 3.0 for rt in ROUND_TYPES})
     self_memory: list[dict[str, Any]] = field(default_factory=list)
     opponent_memory: dict[int, dict[str, float]] = field(default_factory=dict)
     trust_scores: dict[int, float] = field(default_factory=dict)
     strategy_success: dict[str, dict[str, dict[str, float]]] = field(
         default_factory=lambda: {rt: {} for rt in ROUND_TYPES}
     )
+    q_values: dict[str, dict[str, float]] = field(default_factory=lambda: {rt: {} for rt in ROUND_TYPES})
 
     def system_prompt(self, world_state_str: str) -> str:
         return f"""You are {self.name}, a {self.company_type} in ACE++.
@@ -49,6 +52,9 @@ Exposures:
 - Cooperation preference: {self.stake_cooperation:+.1f}
 - Risk tolerance: {self.risk_tolerance:.1f}
 - Resources: {self.resources:.1f}
+- Beliefs: {self.beliefs}
+- Balance sheet: {self.balance_sheet}
+- Portfolio: {self.portfolio}
 
 World state:
 {world_state_str}
@@ -63,6 +69,8 @@ Output ONLY valid JSON:
   "predicted_round": "cooperative|competitive|resource",
   "action": "submit_bid|propose_alliance|accept_alliance|reject_alliance|betray|challenge|allocate_resources|execute_contract",
   "parameters": {{"amount": 50}},
+  "beliefs": {{"competitive": 0.4, "cooperative": 0.3, "resource": 0.3}},
+  "factors": {{"oil_exposure": "positive|negative|neutral", "volatility": "high|moderate", "trust_target": 0.5, "past_success": "short memory note"}},
   "reasoning": "one sentence"
 }}"""
 
@@ -104,16 +112,28 @@ Output ONLY valid JSON:
         world_probs: dict[str, float],
         round_number: int,
         available_agents: list[int],
+        observed_state: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        predicted_round = self._predict_round_from_identity(world_probs)
+        if observed_state is not None:
+            self.update_beliefs(observed_state, world_probs)
+        predicted_round = max(self.beliefs, key=self.beliefs.get)
         candidates = self._candidate_actions(predicted_round, available_agents)
         scored = []
         for action, parameters in candidates:
-            historical = self._historical_score(predicted_round, action)
+            expected_profit = self._expected_profit(action, parameters, predicted_round, observed_state or {})
+            expected_risk = self._expected_risk(action, parameters, observed_state or {})
             trust_alignment = self._trust_alignment(action, parameters)
-            risk_score = self._risk_score(action)
-            base = 0.35
-            score = base + 0.3 * historical + 0.2 * trust_alignment + 0.2 * risk_score
+            historical = self._historical_score(predicted_round, action)
+            personality = self._risk_score(action)
+            identity = self._identity_bias(action, predicted_round)
+            score = (
+                expected_profit
+                - expected_risk
+                + 0.25 * trust_alignment
+                + 0.35 * historical
+                + 0.2 * personality
+                + 0.55 * identity
+            )
             scored.append((score, action, parameters))
         scored.sort(reverse=True, key=lambda item: item[0])
         _, action, parameters = scored[0]
@@ -121,6 +141,8 @@ Output ONLY valid JSON:
             "predicted_round": predicted_round,
             "action": action,
             "parameters": parameters,
+            "beliefs": dict(self.beliefs),
+            "factors": self._decision_factors(action, parameters, observed_state or {}, predicted_round),
             "reasoning": self._fallback_reasoning(predicted_round, action, round_number),
         }
 
@@ -136,6 +158,8 @@ Output ONLY valid JSON:
         other_actions: dict[int, str],
     ) -> None:
         self.resources = max(0.0, self.resources + reward * 8.0)
+        self.balance_sheet["cash"] = max(0.0, self.balance_sheet.get("cash", 0.0) + reward * 5.0)
+        self.balance_sheet["assets"] = max(0.0, self.balance_sheet.get("assets", 0.0) + reward * 2.0)
         self.self_memory.append(
             {
                 "round": round_number,
@@ -154,6 +178,8 @@ Output ONLY valid JSON:
         action_stats["attempts"] += 1
         if success:
             action_stats["successes"] += 1
+        old_q = self.q_values.setdefault(actual_round, {}).get(action, 0.0)
+        self.q_values[actual_round][action] = old_q + 0.25 * (reward - old_q)
 
         for other_id, other_action in other_actions.items():
             if other_id == self.agent_id:
@@ -171,18 +197,58 @@ Output ONLY valid JSON:
                 model["betrayal_count"] += 1
                 self.trust_scores[other_id] = _clamp(self.trust_scores.get(other_id, 0.5) - 0.3)
 
-    def _predict_round_from_identity(self, world_probs: dict[str, float]) -> str:
-        adjusted = dict(world_probs)
-        if self.stake_cooperation > 0.5:
-            adjusted["cooperative"] += 0.1
-        if self.risk_tolerance > 0.75 or self.stake_cooperation < -0.2:
-            adjusted["competitive"] += 0.12
-        if self.stake_food < -0.5 or self.stake_oil < -0.5:
-            adjusted["resource"] += 0.1
-        return max(adjusted, key=adjusted.get)
+    def update_beliefs(self, observed_state: dict[str, Any], world_probs: dict[str, float]) -> None:
+        oil = float(observed_state.get("oil_price", 1.0))
+        volatility = float(observed_state.get("market_volatility", 0.3))
+        tension = float(observed_state.get("trade_tension", 0.2))
+        scarcity = float(observed_state.get("resource_scarcity", 0.3))
+        food = float(observed_state.get("food_index", 1.0))
+        energy = float(observed_state.get("energy_cost", 1.0))
+        cooperation = float(observed_state.get("cooperation_index", 0.5))
+        liquidity = float(observed_state.get("liquidity_index", 0.7))
+
+        likelihood = {
+            "competitive": 0.15 + 0.35 * tension + 0.3 * volatility + 0.2 * max(0.0, oil - 1.0),
+            "cooperative": 0.15 + 0.45 * cooperation + 0.2 * (1.0 - volatility) + 0.1 * liquidity,
+            "resource": 0.15 + 0.4 * scarcity + 0.2 * max(0.0, food - 1.0) + 0.2 * max(0.0, energy - 1.0),
+        }
+        posterior = {}
+        for round_type in ROUND_TYPES:
+            prior = 0.55 * self.beliefs.get(round_type, 1 / 3) + 0.45 * world_probs.get(round_type, 1 / 3)
+            posterior[round_type] = max(0.001, prior * likelihood[round_type])
+        total = sum(posterior.values())
+        self.beliefs = {round_type: posterior[round_type] / total for round_type in ROUND_TYPES}
 
     def _candidate_actions(self, predicted_round: str, available_agents: list[int]) -> list[tuple[str, dict[str, Any]]]:
         partner = next((agent_id for agent_id in available_agents if agent_id != self.agent_id), 0)
+        if "Food" in self.company_type:
+            return [
+                ("allocate_resources", {"amount": 60}),
+                ("propose_alliance", {"target_id": partner}),
+                ("execute_contract", {"team_id": partner}),
+                ("submit_bid", {"amount": 30, "partner_id": partner}),
+            ]
+        if "Central Bank" in self.company_type:
+            return [
+                ("execute_contract", {"team_id": partner}),
+                ("allocate_resources", {"amount": 45}),
+                ("propose_alliance", {"target_id": partner}),
+                ("reject_alliance", {"target_id": partner}),
+            ]
+        if "Hedge Fund" in self.company_type:
+            return [
+                ("submit_bid", {"amount": 85}),
+                ("challenge", {"target_id": partner}),
+                ("betray", {"partner_id": partner}),
+                ("allocate_resources", {"amount": 40}),
+            ]
+        if "Energy" in self.company_type:
+            return [
+                ("challenge", {"target_id": partner}),
+                ("submit_bid", {"amount": 85}),
+                ("betray", {"partner_id": partner}),
+                ("execute_contract", {"team_id": partner}),
+            ]
         if predicted_round == "competitive":
             return [
                 ("challenge", {"target_id": partner}),
@@ -202,10 +268,47 @@ Output ONLY valid JSON:
         ]
 
     def _historical_score(self, predicted_round: str, action: str) -> float:
+        if action in self.q_values.get(predicted_round, {}):
+            return _clamp((self.q_values[predicted_round][action] + 2.0) / 4.0)
         stats = self.strategy_success.get(predicted_round, {}).get(action)
         if not stats:
             return 0.3
         return _clamp(stats.get("successes", 0) / max(1, stats.get("attempts", 0)))
+
+    def _expected_profit(self, action: str, parameters: dict[str, Any], predicted_round: str, observed_state: dict[str, Any]) -> float:
+        oil = float(observed_state.get("oil_price", 1.0))
+        food = float(observed_state.get("food_index", 1.0))
+        gold = float(observed_state.get("gold_price", 1.0))
+        market_return = (
+            self.portfolio.get("oil_exposure", self.stake_oil) * (oil - 1.0)
+            + self.portfolio.get("food_exposure", self.stake_food) * (food - 1.0)
+            + self.portfolio.get("gold_exposure", self.stake_gold) * (gold - 1.0)
+        )
+        action_bonus = {
+            "challenge": 0.35 if predicted_round == "competitive" else -0.1,
+            "betray": 0.3 if predicted_round == "competitive" else -0.2,
+            "propose_alliance": 0.3 if predicted_round == "cooperative" else 0.0,
+            "accept_alliance": 0.25 if predicted_round == "cooperative" else 0.0,
+            "allocate_resources": 0.35 if predicted_round == "resource" else 0.05,
+            "execute_contract": 0.18,
+            "submit_bid": 0.25 if predicted_round == "competitive" else 0.08,
+        }.get(action, 0.0)
+        return market_return + action_bonus
+
+    def _expected_risk(self, action: str, parameters: dict[str, Any], observed_state: dict[str, Any]) -> float:
+        volatility = float(observed_state.get("market_volatility", 0.3))
+        credit = float(observed_state.get("credit_spread", 0.25))
+        action_risk = {
+            "challenge": 0.55,
+            "betray": 0.7,
+            "submit_bid": float(parameters.get("amount", 50)) / 140.0,
+            "propose_alliance": 0.15,
+            "accept_alliance": 0.12,
+            "reject_alliance": 0.1,
+            "allocate_resources": 0.22,
+            "execute_contract": 0.08,
+        }.get(action, 0.2)
+        return (volatility + 0.5 * credit) * action_risk * (1.15 - self.risk_tolerance)
 
     def _trust_alignment(self, action: str, parameters: dict[str, Any]) -> float:
         partner = parameters.get("target_id", parameters.get("partner_id", parameters.get("team_id")))
@@ -223,6 +326,61 @@ Output ONLY valid JSON:
             return _clamp(self.stake_cooperation)
         return 1.0 - abs(self.risk_tolerance - 0.5)
 
+    def _identity_bias(self, action: str, predicted_round: str) -> float:
+        if "Energy" in self.company_type:
+            if action in {"challenge", "submit_bid"} and predicted_round == "competitive":
+                return 1.0
+            if action == "execute_contract":
+                return 0.25
+        if "Food" in self.company_type:
+            if action in {"allocate_resources", "propose_alliance", "execute_contract"}:
+                return 1.0
+            if action in {"challenge", "betray"}:
+                return -0.6
+        if "Hedge Fund" in self.company_type:
+            if action in {"submit_bid", "challenge", "betray"}:
+                return 1.0
+            if action == "allocate_resources":
+                return 0.25
+        if "Central Bank" in self.company_type:
+            if action in {"execute_contract", "propose_alliance", "allocate_resources"}:
+                return 1.0
+            if action in {"challenge", "betray", "submit_bid"}:
+                return -0.8
+        return 0.0
+
+    def _decision_factors(
+        self,
+        action: str,
+        parameters: dict[str, Any],
+        observed_state: dict[str, Any],
+        predicted_round: str,
+    ) -> dict[str, Any]:
+        partner = parameters.get("target_id", parameters.get("partner_id", parameters.get("team_id")))
+        trust = self.trust_scores.get(int(partner), 0.5) if partner is not None else None
+        return {
+            "oil_exposure": "positive" if self.stake_oil > 0 else "negative" if self.stake_oil < 0 else "neutral",
+            "food_exposure": "positive" if self.stake_food > 0 else "negative" if self.stake_food < 0 else "neutral",
+            "volatility": "high" if float(observed_state.get("market_volatility", 0.3)) > 0.55 else "moderate",
+            "credit": "tight" if float(observed_state.get("credit_spread", 0.25)) > 0.45 else "normal",
+            "trust_target": None if trust is None else round(trust, 2),
+            "past_success": self._best_memory_snippet(predicted_round),
+            "personality": self.company_type,
+            "chosen_bias": round(self._identity_bias(action, predicted_round), 2),
+        }
+
+    def _best_memory_snippet(self, predicted_round: str) -> str:
+        stats = self.strategy_success.get(predicted_round, {})
+        if not stats:
+            return "no strong habit yet"
+        best_action = max(
+            stats,
+            key=lambda action: stats[action].get("successes", 0) / max(1, stats[action].get("attempts", 0)),
+        )
+        item = stats[best_action]
+        rate = item.get("successes", 0) / max(1, item.get("attempts", 0))
+        return f"{best_action} worked {rate:.0%} in {predicted_round} rounds"
+
     def _fallback_reasoning(self, predicted_round: str, action: str, round_number: int) -> str:
         return (
             f"Round {round_number}: {self.name} expects {predicted_round} conditions and chooses "
@@ -235,7 +393,7 @@ AGENT_PROFILES = [
         agent_id=0,
         name="PetroCorp",
         company_type="Energy Company",
-        emoji="Oil",
+        emoji="🛢️",
         primary_objective="Maximise revenue from oil and energy assets during price spikes",
         stake_oil=0.9,
         stake_gold=0.1,
@@ -247,7 +405,7 @@ AGENT_PROFILES = [
         agent_id=1,
         name="GlobalFoods Inc",
         company_type="Food Importer & Distributor",
-        emoji="Food",
+        emoji="🌾",
         primary_objective="Secure supply chains and minimise commodity cost exposure",
         stake_oil=-0.6,
         stake_gold=0.0,
@@ -259,7 +417,7 @@ AGENT_PROFILES = [
         agent_id=2,
         name="Aurelius Capital",
         company_type="Hedge Fund",
-        emoji="Fund",
+        emoji="📈",
         primary_objective="Generate alpha from volatility and market dislocations",
         stake_oil=0.4,
         stake_gold=0.7,
@@ -271,7 +429,7 @@ AGENT_PROFILES = [
         agent_id=3,
         name="CentralBank of ACE",
         company_type="Central Bank / Regulator",
-        emoji="Bank",
+        emoji="🏦",
         primary_objective="Maintain market stability, control inflation, and prevent systemic risk",
         stake_oil=-0.3,
         stake_gold=-0.2,
@@ -290,4 +448,10 @@ def fresh_agent_profiles() -> list[AgentProfile]:
     ids = [agent.agent_id for agent in agents]
     for agent in agents:
         agent.trust_scores = {other_id: 0.5 for other_id in ids if other_id != agent.agent_id}
+        agent.portfolio = {
+            "oil_exposure": agent.stake_oil,
+            "food_exposure": agent.stake_food,
+            "gold_exposure": agent.stake_gold,
+            "cash": 1.0 - min(0.8, abs(agent.stake_oil) * 0.2 + abs(agent.stake_food) * 0.2),
+        }
     return agents
