@@ -14,12 +14,29 @@ import json
 import os
 import re
 from html import escape
+from pathlib import Path
 from typing import Any
 
 try:
     import gradio as gr
 except ModuleNotFoundError:  # pragma: no cover
     gr = None
+
+
+def load_local_env(path: str = ".env") -> None:
+    """Load local env vars for development without overriding Space secrets."""
+    env_path = Path(path)
+    if not env_path.exists():
+        return
+    for raw_line in env_path.read_text().splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_local_env()
 
 from ace_agents import AgentProfile
 from ace_text_inject import call_groq_chat_completion, describe_impact

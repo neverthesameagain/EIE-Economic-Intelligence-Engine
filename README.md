@@ -50,3 +50,13 @@ The app runs without API keys using deterministic fallback logic. For live LLM d
 
 - `LLM_PROVIDER=groq` and `GROQ_API_KEY`
 - `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`
+
+For the current deployment, the recommended setup is:
+
+```bash
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_key
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+The model can be LLaMA, but the active client is Groq. The current runtime does **not** use `OPENAI_API_KEY` or `OPENAI_BASE_URL`; those only appear in legacy files preserved under `legacy/`.
