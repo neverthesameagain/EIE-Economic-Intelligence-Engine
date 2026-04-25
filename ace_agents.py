@@ -10,6 +10,11 @@ from ace_reward import ACTIONS
 
 
 ROUND_TYPES = ["cooperative", "competitive", "resource"]
+LEARNING_RATE = 0.25
+DEFAULT_EPSILON = 0.1
+COOPERATIVE_ACTIONS = {"propose_alliance", "accept_alliance", "execute_contract"}
+AGGRESSIVE_ACTIONS = {"challenge", "betray", "submit_bid"}
+DEFENSIVE_ACTIONS = {"allocate_resources", "execute_contract"}
 
 
 def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
@@ -38,7 +43,9 @@ class AgentProfile:
     strategy_success: dict[str, dict[str, dict[str, float]]] = field(
         default_factory=lambda: {rt: {} for rt in ROUND_TYPES}
     )
-    q_values: dict[str, dict[str, float]] = field(default_factory=lambda: {rt: {} for rt in ROUND_TYPES})
+    q_values: dict[str, dict[str, float]] = field(
+        default_factory=lambda: {action: {rt: 0.0 for rt in ROUND_TYPES} for action in ACTIONS}
+    )
 
     def system_prompt(self, world_state_str: str) -> str:
         return f"""You are {self.name}, a {self.company_type} in ACE++.
@@ -91,8 +98,9 @@ Output ONLY valid JSON:
         opponent_lines = []
         for agent_id, model in sorted(self.opponent_memory.items()):
             opponent_lines.append(
-                f"- Agent {agent_id}: aggression={model.get('aggressiveness_score', 0):.2f}, "
-                f"cooperation={model.get('cooperation_score', 0):.2f}, betrayals={int(model.get('betrayal_count', 0))}, "
+                f"- Agent {agent_id}: aggression={model.get('aggression', model.get('aggressiveness_score', 0)):.2f}, "
+                f"cooperation={model.get('cooperation', model.get('cooperation_score', 0)):.2f}, "
+                f"betrayal_rate={model.get('betrayal_rate', 0):.2f}, "
                 f"trust={self.trust_scores.get(agent_id, 0.5):.2f}"
             )
 
@@ -113,6 +121,8 @@ Output ONLY valid JSON:
         round_number: int,
         available_agents: list[int],
         observed_state: dict[str, Any] | None = None,
+        rng: Any | None = None,
+        epsilon: float = DEFAULT_EPSILON,
     ) -> dict[str, Any]:
         if observed_state is not None:
             self.update_beliefs(observed_state, world_probs)
@@ -126,23 +136,32 @@ Output ONLY valid JSON:
             historical = self._historical_score(predicted_round, action)
             personality = self._risk_score(action)
             identity = self._identity_bias(action, predicted_round)
+            opponent_adjustment = self._opponent_adjustment(action, parameters)
+            q_value = self._q_value(action, predicted_round)
             score = (
                 expected_profit
                 - expected_risk
-                + 0.25 * trust_alignment
-                + 0.35 * historical
-                + 0.2 * personality
-                + 0.55 * identity
+                + 0.30 * q_value
+                + 0.20 * trust_alignment
+                + 0.20 * personality
+                + 0.35 * identity
+                + 0.20 * historical
+                + opponent_adjustment
             )
-            scored.append((score, action, parameters))
+            scored.append((score, action, dict(parameters)))
         scored.sort(reverse=True, key=lambda item: item[0])
-        _, action, parameters = scored[0]
+        explored = False
+        if rng is not None and round_number > 1 and rng.random() < epsilon:
+            _, action, parameters = rng.choice(scored)
+            explored = True
+        else:
+            _, action, parameters = scored[0]
         return {
             "predicted_round": predicted_round,
             "action": action,
             "parameters": parameters,
             "beliefs": dict(self.beliefs),
-            "factors": self._decision_factors(action, parameters, observed_state or {}, predicted_round),
+            "factors": self._decision_factors(action, parameters, observed_state or {}, predicted_round, explored),
             "reasoning": self._fallback_reasoning(predicted_round, action, round_number),
         }
 
@@ -156,6 +175,7 @@ Output ONLY valid JSON:
         reward: float,
         success: bool,
         other_actions: dict[int, str],
+        reward_components: dict[str, float] | None = None,
     ) -> None:
         self.resources = max(0.0, self.resources + reward * 8.0)
         self.balance_sheet["cash"] = max(0.0, self.balance_sheet.get("cash", 0.0) + reward * 5.0)
@@ -167,10 +187,12 @@ Output ONLY valid JSON:
                 "predicted_round": predicted_round,
                 "actual_round": actual_round,
                 "reward": round(reward, 3),
+                "reward_components": reward_components or {},
                 "success": bool(success),
+                "opponents": dict(other_actions),
             }
         )
-        self.self_memory = self.self_memory[-12:]
+        self.self_memory = self.self_memory[-10:]
 
         action_stats = self.strategy_success.setdefault(actual_round, {}).setdefault(
             action, {"attempts": 0, "successes": 0}
@@ -178,24 +200,29 @@ Output ONLY valid JSON:
         action_stats["attempts"] += 1
         if success:
             action_stats["successes"] += 1
-        old_q = self.q_values.setdefault(actual_round, {}).get(action, 0.0)
-        self.q_values[actual_round][action] = old_q + 0.25 * (reward - old_q)
+        self.q_values.setdefault(action, {rt: 0.0 for rt in ROUND_TYPES})
+        old_q = self.q_values[action].get(actual_round, 0.0)
+        self.q_values[action][actual_round] = old_q + LEARNING_RATE * (reward - old_q)
 
         for other_id, other_action in other_actions.items():
             if other_id == self.agent_id:
                 continue
             model = self.opponent_memory.setdefault(
                 other_id,
-                {"aggressiveness_score": 0.0, "cooperation_score": 0.0, "betrayal_count": 0.0},
+                {"aggression": 0.0, "cooperation": 0.0, "betrayal_rate": 0.0, "observations": 0.0},
             )
-            if other_action in {"challenge", "betray", "submit_bid"}:
-                model["aggressiveness_score"] = _clamp(model["aggressiveness_score"] + 0.12)
-            if other_action in {"propose_alliance", "accept_alliance", "execute_contract"}:
-                model["cooperation_score"] = _clamp(model["cooperation_score"] + 0.12)
+            model["observations"] = min(20.0, model.get("observations", 0.0) + 1.0)
+            if other_action in {"challenge", "submit_bid"}:
+                model["aggression"] = _clamp(model.get("aggression", 0.0) + 0.1)
+            if other_action in COOPERATIVE_ACTIONS:
+                model["cooperation"] = _clamp(model.get("cooperation", 0.0) + 0.1)
                 self.trust_scores[other_id] = _clamp(self.trust_scores.get(other_id, 0.5) + 0.06)
             if other_action == "betray":
-                model["betrayal_count"] += 1
-                self.trust_scores[other_id] = _clamp(self.trust_scores.get(other_id, 0.5) - 0.3)
+                model["aggression"] = _clamp(model.get("aggression", 0.0) + 0.1)
+                model["betrayal_rate"] = _clamp(model.get("betrayal_rate", 0.0) + 0.2)
+                self.trust_scores[other_id] = _clamp(self.trust_scores.get(other_id, 0.5) - 0.5)
+            if other_action == "challenge":
+                self.trust_scores[other_id] = _clamp(self.trust_scores.get(other_id, 0.5) - 0.1)
 
     def update_beliefs(self, observed_state: dict[str, Any], world_probs: dict[str, float]) -> None:
         oil = float(observed_state.get("oil_price", 1.0))
@@ -220,40 +247,41 @@ Output ONLY valid JSON:
         self.beliefs = {round_type: posterior[round_type] / total for round_type in ROUND_TYPES}
 
     def _candidate_actions(self, predicted_round: str, available_agents: list[int]) -> list[tuple[str, dict[str, Any]]]:
-        partner = next((agent_id for agent_id in available_agents if agent_id != self.agent_id), 0)
+        partner = self._select_partner(available_agents, prefer_trust=True)
+        risky_partner = self._select_partner(available_agents, prefer_trust=False)
         if "Food" in self.company_type:
             return [
                 ("allocate_resources", {"amount": 60}),
                 ("propose_alliance", {"target_id": partner}),
                 ("execute_contract", {"team_id": partner}),
-                ("submit_bid", {"amount": 30, "partner_id": partner}),
+                ("submit_bid", {"amount": 30, "partner_id": risky_partner}),
             ]
         if "Central Bank" in self.company_type:
             return [
                 ("execute_contract", {"team_id": partner}),
                 ("allocate_resources", {"amount": 45}),
                 ("propose_alliance", {"target_id": partner}),
-                ("reject_alliance", {"target_id": partner}),
+                ("accept_alliance", {"target_id": partner}),
             ]
         if "Hedge Fund" in self.company_type:
             return [
                 ("submit_bid", {"amount": 85}),
-                ("challenge", {"target_id": partner}),
-                ("betray", {"partner_id": partner}),
+                ("challenge", {"target_id": risky_partner}),
+                ("betray", {"partner_id": risky_partner}),
                 ("allocate_resources", {"amount": 40}),
             ]
         if "Energy" in self.company_type:
             return [
-                ("challenge", {"target_id": partner}),
+                ("challenge", {"target_id": risky_partner}),
                 ("submit_bid", {"amount": 85}),
-                ("betray", {"partner_id": partner}),
+                ("betray", {"partner_id": risky_partner}),
                 ("execute_contract", {"team_id": partner}),
             ]
         if predicted_round == "competitive":
             return [
-                ("challenge", {"target_id": partner}),
+                ("challenge", {"target_id": risky_partner}),
                 ("submit_bid", {"amount": 80}),
-                ("betray", {"partner_id": partner}),
+                ("betray", {"partner_id": risky_partner}),
             ]
         if predicted_round == "cooperative":
             return [
@@ -268,8 +296,9 @@ Output ONLY valid JSON:
         ]
 
     def _historical_score(self, predicted_round: str, action: str) -> float:
-        if action in self.q_values.get(predicted_round, {}):
-            return _clamp((self.q_values[predicted_round][action] + 2.0) / 4.0)
+        q_value = self._q_value(action, predicted_round)
+        if abs(q_value) > 1e-9:
+            return _clamp((q_value + 2.0) / 4.0)
         stats = self.strategy_success.get(predicted_round, {}).get(action)
         if not stats:
             return 0.3
@@ -319,6 +348,44 @@ Output ONLY valid JSON:
             return 1.0 - trust
         return 0.5
 
+    def _opponent_adjustment(self, action: str, parameters: dict[str, Any]) -> float:
+        partner = parameters.get("target_id", parameters.get("partner_id", parameters.get("team_id")))
+        if partner is None:
+            return 0.0
+        model = self.opponent_memory.get(int(partner), {})
+        betrayal_rate = model.get("betrayal_rate", 0.0)
+        aggression = model.get("aggression", model.get("aggressiveness_score", 0.0))
+        if action in COOPERATIVE_ACTIONS and betrayal_rate > 0.5:
+            return -0.45
+        if action in COOPERATIVE_ACTIONS and aggression > 0.5:
+            return -0.2
+        if action in DEFENSIVE_ACTIONS and aggression > 0.5:
+            return 0.2
+        if action in {"challenge", "betray"} and betrayal_rate > 0.5:
+            return 0.15
+        return 0.0
+
+    def _select_partner(self, available_agents: list[int], *, prefer_trust: bool) -> int:
+        candidates = [agent_id for agent_id in available_agents if agent_id != self.agent_id]
+        if not candidates:
+            return self.agent_id
+        if prefer_trust:
+            return max(
+                candidates,
+                key=lambda agent_id: (
+                    self.trust_scores.get(agent_id, 0.5)
+                    - self.opponent_memory.get(agent_id, {}).get("betrayal_rate", 0.0)
+                    - 0.3 * self.opponent_memory.get(agent_id, {}).get("aggression", 0.0)
+                ),
+            )
+        return min(candidates, key=lambda agent_id: self.trust_scores.get(agent_id, 0.5))
+
+    def _q_value(self, action: str, regime: str) -> float:
+        # Supports both current Q[action][regime] and older Q[regime][action] snapshots.
+        if action in self.q_values:
+            return float(self.q_values.get(action, {}).get(regime, 0.0))
+        return float(self.q_values.get(regime, {}).get(action, 0.0))
+
     def _risk_score(self, action: str) -> float:
         if action in {"challenge", "betray", "submit_bid"}:
             return self.risk_tolerance
@@ -355,6 +422,7 @@ Output ONLY valid JSON:
         parameters: dict[str, Any],
         observed_state: dict[str, Any],
         predicted_round: str,
+        explored: bool = False,
     ) -> dict[str, Any]:
         partner = parameters.get("target_id", parameters.get("partner_id", parameters.get("team_id")))
         trust = self.trust_scores.get(int(partner), 0.5) if partner is not None else None
@@ -364,7 +432,15 @@ Output ONLY valid JSON:
             "volatility": "high" if float(observed_state.get("market_volatility", 0.3)) > 0.55 else "moderate",
             "credit": "tight" if float(observed_state.get("credit_spread", 0.25)) > 0.45 else "normal",
             "trust_target": None if trust is None else round(trust, 2),
+            "opponent_betrayal_rate": None
+            if partner is None
+            else round(self.opponent_memory.get(int(partner), {}).get("betrayal_rate", 0.0), 2),
+            "opponent_aggression": None
+            if partner is None
+            else round(self.opponent_memory.get(int(partner), {}).get("aggression", 0.0), 2),
             "past_success": self._best_memory_snippet(predicted_round),
+            "q_value": round(self._q_value(action, predicted_round), 3),
+            "exploration": bool(explored),
             "personality": self.company_type,
             "chosen_bias": round(self._identity_bias(action, predicted_round), 2),
         }

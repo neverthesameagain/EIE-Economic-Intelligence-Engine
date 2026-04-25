@@ -36,18 +36,57 @@ PRESET_EVENTS = [
     "major food supply chain disruption",
 ]
 APP_CSS = """
+:root {
+  --ace-bg: #070b1a;
+  --ace-card: rgba(255, 255, 255, 0.08);
+  --ace-card-strong: rgba(255, 255, 255, 0.14);
+  --ace-border: rgba(255, 255, 255, 0.16);
+  --ace-text: #e5e7eb;
+  --ace-muted: #94a3b8;
+  --ace-cyan: #22d3ee;
+  --ace-purple: #a78bfa;
+  --ace-pink: #fb7185;
+}
+
+body, .gradio-container {
+  background:
+    radial-gradient(circle at 8% 8%, rgba(34, 211, 238, 0.24), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(167, 139, 250, 0.28), transparent 28%),
+    radial-gradient(circle at 50% 95%, rgba(251, 113, 133, 0.16), transparent 30%),
+    linear-gradient(180deg, #070b1a 0%, #0f172a 48%, #111827 100%) !important;
+  color: var(--ace-text) !important;
+}
+
 .gradio-container {
   max-width: 1500px !important;
   margin: auto;
 }
 
+.block, .form, .panel, .gr-box, .gr-form, .gr-panel {
+  border-color: var(--ace-border) !important;
+}
+
 .hero {
-  padding: 28px 32px;
-  border-radius: 26px;
+  position: relative;
+  overflow: hidden;
+  padding: 34px 36px;
+  border-radius: 30px;
   color: white;
-  background: linear-gradient(135deg, #1e293b 0%, #2563eb 50%, #7c3aed 100%);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-  backdrop-filter: blur(12px);
+  background:
+    linear-gradient(135deg, rgba(15, 23, 42, 0.96) 0%, rgba(37, 99, 235, 0.86) 50%, rgba(124, 58, 237, 0.88) 100%);
+  border: 1px solid rgba(255,255,255,0.22);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.22);
+  backdrop-filter: blur(18px);
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  right: -110px;
+  top: -130px;
+  background: radial-gradient(circle, rgba(255,255,255,0.28), transparent 92%);
 }
 
 .hero p {
@@ -57,19 +96,21 @@ APP_CSS = """
 }
 
 .hero h1 {
-  font-size: 36px;
+  font-size: 42px;
   font-weight: 800;
   margin: 0 0 8px 0;
+  letter-spacing: -0.045em;
 }
 
 .demo-hint {
-  margin: 14px 0 4px;
-  padding: 14px 18px;
-  border-radius: 18px !important;
-  border: 1px solid #bfdbfe;
-  background: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 100%);
-  color: #1e3a8a;
+  margin: 16px 0 6px;
+  padding: 15px 18px;
+  border-radius: 20px !important;
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.18) 0%, rgba(124, 58, 237, 0.18) 100%);
+  color: #e0f2fe;
   font-weight: 700;
+  box-shadow: 0 14px 35px rgba(2, 6, 23, 0.22);
 }
 
 .flow-strip {
@@ -80,22 +121,23 @@ APP_CSS = """
 }
 
 .flow-step {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  padding: 14px 16px;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.07) 100%);
+  border-radius: 20px;
+  border: 1px solid var(--ace-border);
+  padding: 16px 18px;
+  box-shadow: 0 16px 38px rgba(2, 6, 23, 0.24);
+  backdrop-filter: blur(14px);
   transition: all 0.25s ease;
 }
 
 .flow-step b {
   display: block;
   margin-bottom: 6px;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .flow-step span {
-  color: #475569;
+  color: #cbd5e1;
   font-size: 13px;
 }
 
@@ -105,12 +147,13 @@ APP_CSS = """
 }
 
 .agent-card {
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-  padding: 16px;
-  border-radius: 18px;
-  border: 1px solid #e5e7eb;
-  margin-bottom: 12px;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.075) 100%);
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid var(--ace-border);
+  margin-bottom: 14px;
+  box-shadow: 0 18px 42px rgba(2, 6, 23, 0.24);
+  backdrop-filter: blur(14px);
 }
 
 .agent-card-header {
@@ -122,31 +165,33 @@ APP_CSS = """
 
 .agent-card h3 {
   margin:0;
-  color: #0f172a;
+  color: #f8fafc;
 }
 
 .agent-card small, .agent-muted {
-  color: #64748b;
+  color: #cbd5e1;
 }
 
 .agent-resources {
   font-weight: 800;
-  color:#16a34a;
+  color:#86efac;
 }
 
 .belief-pre {
   margin: 6px 0 0;
   padding: 10px;
   border-radius: 12px;
-  background: #f1f5f9;
-  color: #0f172a;
+  background: rgba(15, 23, 42, 0.55);
+  color: #e0f2fe;
   white-space: pre-wrap;
+  border: 1px solid rgba(148, 163, 184, 0.22);
 }
 
 button {
-  border-radius: 14px !important;
+  border-radius: 16px !important;
   font-weight: 600;
   transition: all 0.2s ease;
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.18);
 }
 
 button:hover {
@@ -156,17 +201,21 @@ button:hover {
 textarea {
   font-family: monospace;
   font-size: 13px;
+  background: rgba(15, 23, 42, 0.72) !important;
+  color: #e5e7eb !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
 }
 
 .section-title {
   margin: 20px 0 10px;
   padding: 12px 16px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-  color: #0f172a;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.16) 0%, rgba(167, 139, 250, 0.16) 100%);
+  color: #f8fafc;
   font-weight: 700;
   letter-spacing: 0.3px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--ace-border);
+  box-shadow: 0 12px 28px rgba(2, 6, 23, 0.18);
 }
 
 @keyframes fadeInUp {
@@ -182,13 +231,24 @@ textarea {
   margin: 18px 0 8px;
   padding: 16px 18px;
   border-radius: 18px;
-  background: #0f172a;
+  background: linear-gradient(135deg, rgba(34, 211, 238, 0.16), rgba(251, 113, 133, 0.15));
   color: #e2e8f0;
   font-weight: 700;
+  border: 1px solid var(--ace-border);
 }
 
-.small-note { color: #64748b; font-size: 13px; margin: 8px 0 2px; }
+.small-note { color: #cbd5e1; font-size: 13px; margin: 8px 0 2px; }
 textarea, input { border-radius: 14px !important; }
+
+label, .wrap, .prose, .markdown, .gradio-container h1, .gradio-container h2, .gradio-container h3 {
+  color: var(--ace-text) !important;
+}
+
+input, select {
+  background: rgba(15, 23, 42, 0.72) !important;
+  color: #e5e7eb !important;
+  border-color: rgba(148, 163, 184, 0.28) !important;
+}
 """
 try:
     import plotly.graph_objects as go
@@ -430,9 +490,16 @@ def render_causal_log(env: ACEWorldEnv) -> str:
         return "No event injected yet."
     lines = []
     for item in env.world.causal_log[-3:]:
-        deltas = ", ".join(f"{key}: {value:+.2f}" for key, value in item["deltas"].items())
+        deltas = ", ".join(
+            f"{key}: {value:+.2f}"
+            for key, value in item["deltas"].items()
+            if abs(float(value)) > 1e-9
+        )
+        sectors = ", ".join(item.get("affected_sectors", [])) or "none"
         lines.append(
             f"Event: {item['event']}\n"
+            f"Type: {item.get('event_type', 'unknown')}\n"
+            f"Affected sectors: {sectors}\n"
             f"Deltas: {deltas or 'none'}\n"
             f"Reasoning: {item['reasoning']}\n"
             f"Confidence: {item['confidence']:.2f}"
@@ -515,6 +582,10 @@ def render_agent_cards(env: ACEWorldEnv, round_result: dict[str, Any] | None = N
             correct = "-"
             reasoning = agent.primary_objective
             reward_line = "+0.00"
+        q_line = _best_q_line(agent)
+        opponent_line = _opponent_model_line(agent)
+        mode = "explore" if factors.get("exploration") else "exploit"
+        target_trust = factors.get("trust_target", "-")
         cards.append(f"""
 <div class="agent-card">
   <div class="agent-card-header">
@@ -530,6 +601,8 @@ def render_agent_cards(env: ACEWorldEnv, round_result: dict[str, Any] | None = N
   </div>
   <div style="margin-top:10px;"><b>Action:</b> {escape(action_line)}</div>
   <div style="margin-top:6px;"><b>Reward:</b> {escape(reward_line)}</div>
+  <div style="margin-top:6px;"><b>Learning:</b> {escape(q_line)} | mode={escape(str(mode))} | target trust={escape(str(target_trust))}</div>
+  <div style="margin-top:6px;"><b>Opponent model:</b> {escape(opponent_line)}</div>
   <div class="agent-muted" style="margin-top:6px; font-size:13px;">{escape(reasoning)}</div>
 </div>
 """)
@@ -540,6 +613,34 @@ def _belief_text(beliefs: dict[str, float]) -> str:
     if not beliefs:
         return "-"
     return " | ".join(f"{key[:4]} {value:.0%}" for key, value in beliefs.items())
+
+
+def _best_q_line(agent: AgentProfile) -> str:
+    best: tuple[float, str, str] | None = None
+    for action, regimes in agent.q_values.items():
+        if not isinstance(regimes, dict):
+            continue
+        for regime, value in regimes.items():
+            candidate = (float(value), action, regime)
+            if best is None or candidate[0] > best[0]:
+                best = candidate
+    if best is None or abs(best[0]) < 1e-9:
+        return "no learned preference yet"
+    return f"best Q={best[1]} in {best[2]} ({best[0]:+.2f})"
+
+
+def _opponent_model_line(agent: AgentProfile) -> str:
+    if not agent.opponent_memory:
+        return "no opponent observations yet"
+    riskiest_id, model = max(
+        agent.opponent_memory.items(),
+        key=lambda item: item[1].get("betrayal_rate", 0.0) + item[1].get("aggression", 0.0),
+    )
+    return (
+        f"Agent {riskiest_id}: aggression={model.get('aggression', 0.0):.2f}, "
+        f"cooperation={model.get('cooperation', 0.0):.2f}, "
+        f"betrayal={model.get('betrayal_rate', 0.0):.2f}"
+    )
 
 
 def _belief_bars(beliefs: dict[str, float]) -> str:

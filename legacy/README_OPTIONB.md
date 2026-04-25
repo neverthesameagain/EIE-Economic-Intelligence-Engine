@@ -18,9 +18,10 @@ Text event
 
 - `WorldState` tracks commodities, macro indicators, volatility, cooperation, scarcity, event history, and causal traces.
 - The world includes sector health, liquidity, credit spreads, geopolitical risk, supply-chain stability, endogenous feedback loops, and an economic regime label.
-- `ace_text_inject.py` turns events like "oil crisis" into validated deltas with fallback rules when no API key is present.
+- `ace_text_inject.py` turns events like "oil crisis" into validated, cached, bounded deltas with deterministic fallback rules when no API key is present.
 - `ace_agents.py` defines four distinct company archetypes with different exposures and risk profiles.
 - Agents maintain noisy beliefs over hidden regimes, portfolios, balance sheets, memory, trust, opponent models, Q-style action values, and strategy success counters.
+- Agents use a lightweight Q-style adaptation loop: observe state, choose a discrete action, receive decomposed reward, update `Q[action][regime]`, trust, memory, and opponent models.
 - `ace_reward.py` separates inference reward from action reward, preventing bid-size reward hacking.
 - `demo_gradio.py` is the judge-facing interactive demo.
 - The UI now includes world gauges, cause-effect flow, round probability bars, agent cards with belief distributions, interaction logs, behavior evolution, optimal-action comparison, and resource/world plots.
@@ -112,3 +113,4 @@ Inference is logged separately from action reward so reward hacking is visible i
 - `compute_total_reward()` rewards correct inference independently of bid amount.
 - `demo_gradio.py` runs without an API key.
 - Repeated rounds change resources, trust, and agent memories.
+- `python test_text_to_economy.py` validates oil shock, peace deal, repeated-input consistency, invalid LLM fallback, and world clamping.

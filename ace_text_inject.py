@@ -6,14 +6,35 @@ import json
 import os
 import re
 import urllib.request
+from copy import deepcopy
 from typing import Any
 
 
 INJECT_SYSTEM_PROMPT = """You are an economic analyst AI.
-Given a real-world event, output ONLY valid JSON with:
-- numeric deltas for affected world state fields
-- confidence in [0,1]
-- causal_reasoning in 1-2 concise lines
+Given a real-world event, output ONLY valid JSON with this schema:
+{
+  "event_type": "supply shock|demand shock|geopolitical|policy|systemic crisis|cooperation / agreement",
+  "deltas": {
+    "oil_price": 0.0,
+    "gold_price": 0.0,
+    "food_index": 0.0,
+    "energy_cost": 0.0,
+    "interest_rate": 0.0,
+    "inflation": 0.0,
+    "gdp_growth": 0.0,
+    "trade_tension": 0.0,
+    "market_volatility": 0.0,
+    "cooperation_index": 0.0,
+    "resource_scarcity": 0.0,
+    "liquidity_index": 0.0,
+    "credit_spread": 0.0,
+    "geopolitical_risk": 0.0,
+    "supply_chain_stability": 0.0
+  },
+  "confidence": 0.0,
+  "reasoning": "1-2 concise causal lines",
+  "affected_sectors": ["energy"]
+}
 
 Allowed delta fields:
 oil_price, gold_price, food_index, energy_cost, interest_rate, inflation,
@@ -23,16 +44,17 @@ sector_energy, sector_agriculture, sector_finance, sector_manufacturing, sector_
 
 Rules:
 1. Output ONLY JSON. No markdown.
-2. Omit unchanged fields.
-3. Use realistic magnitudes.
-4. Include second-order effects.
+2. Include every delta key, using 0.0 for neutral.
+3. Use realistic magnitudes and never exceed absolute delta 0.4.
+4. Include second-order effects: oil -> energy -> inflation; volatility -> lower cooperation.
+5. Use low, stable magnitudes: slight=0.05, moderate=0.1, major=0.2, severe=0.3-0.4.
 
 Example:
-{"oil_price": 0.35, "energy_cost": 0.25, "market_volatility": 0.2, "inflation": 0.02, "confidence": 0.84, "causal_reasoning": "Oil supply shock raises fuel and energy costs while increasing uncertainty."}
+{"event_type": "supply shock", "deltas": {"oil_price": 0.2, "gold_price": 0.0, "food_index": 0.0, "energy_cost": 0.15, "interest_rate": 0.0, "inflation": 0.05, "gdp_growth": 0.0, "trade_tension": 0.0, "market_volatility": 0.1, "cooperation_index": -0.04, "resource_scarcity": 0.0, "liquidity_index": 0.0, "credit_spread": 0.0, "geopolitical_risk": 0.1, "supply_chain_stability": 0.0}, "confidence": 0.84, "reasoning": "Oil supply shock raises energy costs and inflation while increasing uncertainty.", "affected_sectors": ["energy", "manufacturing"]}
 """
 
 
-DELTA_FIELDS = {
+DELTA_FIELDS = (
     "oil_price",
     "gold_price",
     "food_index",
@@ -48,11 +70,45 @@ DELTA_FIELDS = {
     "credit_spread",
     "geopolitical_risk",
     "supply_chain_stability",
+)
+
+SECTOR_DELTA_FIELDS = (
     "sector_energy",
     "sector_agriculture",
     "sector_finance",
     "sector_manufacturing",
     "sector_technology",
+)
+
+VALID_SECTORS = {"energy", "agriculture", "finance", "manufacturing", "technology"}
+VALID_EVENT_TYPES = {
+    "supply shock",
+    "demand shock",
+    "geopolitical",
+    "policy",
+    "systemic crisis",
+    "cooperation / agreement",
+}
+
+DELTA_LIMIT = 0.4
+EVENT_CACHE: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+HARD_BOUNDS = {
+    "oil_price": (0.5, 2.5),
+    "gold_price": (0.5, 2.5),
+    "food_index": (0.5, 2.5),
+    "energy_cost": (0.5, 2.5),
+    "market_volatility": (0.0, 1.0),
+    "cooperation_index": (0.0, 1.0),
+    "resource_scarcity": (0.0, 1.0),
+    "liquidity_index": (0.0, 1.0),
+    "credit_spread": (0.0, 1.0),
+    "geopolitical_risk": (0.0, 1.0),
+    "supply_chain_stability": (0.0, 1.0),
+    "inflation": (0.0, 0.5),
+    "interest_rate": (0.0, 0.25),
+    "gdp_growth": (-0.2, 0.2),
+    "trade_tension": (0.0, 1.0),
 }
 
 
@@ -64,11 +120,16 @@ def parse_event_payload(
     debug: bool = False,
 ) -> dict[str, Any]:
     """Return {deltas, confidence, causal_reasoning}; never raises."""
-    if not event_text.strip():
-        return {"deltas": {}, "confidence": 0.0, "causal_reasoning": "No event provided."}
+    normalized_event = normalize_event_text(event_text)
+    if not normalized_event:
+        return _empty_payload("No event provided.", confidence=0.0)
 
     raw = ""
     provider = (provider or os.getenv("LLM_PROVIDER", "fallback")).lower().strip()
+    cache_key = (provider, os.getenv("GROQ_MODEL" if provider == "groq" else "ANTHROPIC_MODEL", model), normalized_event)
+    if not debug and cache_key in EVENT_CACHE:
+        return deepcopy(EVENT_CACHE[cache_key])
+
     if provider == "groq" and os.getenv("GROQ_API_KEY"):
         try:
             raw = call_groq_chat_completion(
@@ -113,13 +174,20 @@ def parse_event_payload(
     if raw:
         parsed = _parse_json_payload(raw)
         if parsed is not None:
-            return parsed
+            EVENT_CACHE[cache_key] = parsed
+            return deepcopy(parsed)
 
-    return _fallback_event_payload(event_text)
+    fallback = _fallback_event_payload(normalized_event)
+    EVENT_CACHE[cache_key] = fallback
+    return deepcopy(fallback)
 
 
 def parse_event_to_deltas(event_text: str, world_state_str: str = "") -> dict[str, float]:
     return parse_event_payload(event_text, world_state_str)["deltas"]
+
+
+def normalize_event_text(event_text: str) -> str:
+    return re.sub(r"\s+", " ", event_text.strip().lower())
 
 
 def call_groq_chat_completion(
@@ -168,7 +236,8 @@ def call_groq_chat_completion(
 
 
 def describe_impact(deltas: dict[str, float], event_text: str, causal_reasoning: str = "") -> str:
-    if not deltas:
+    non_zero = {key: value for key, value in deltas.items() if abs(float(value)) > 1e-9}
+    if not non_zero:
         return f"No major economic impact detected for: '{event_text}'."
 
     labels = {
@@ -196,7 +265,7 @@ def describe_impact(deltas: dict[str, float], event_text: str, causal_reasoning:
     lines = [f"Economic impact of: '{event_text}'"]
     if causal_reasoning:
         lines.append(f"Cause: {causal_reasoning}")
-    for field, delta in deltas.items():
+    for field, delta in non_zero.items():
         if field not in labels:
             continue
         arrow = "up" if delta > 0 else "down"
@@ -223,106 +292,285 @@ def _parse_json_payload(raw: str) -> dict[str, Any] | None:
     if not isinstance(obj, dict):
         return None
 
-    deltas = {}
-    for key, value in obj.items():
-        if key not in DELTA_FIELDS:
-            continue
+    payload = _validate_payload(obj)
+    if payload is None:
+        return None
+    return payload
+
+
+def _validate_payload(obj: dict[str, Any]) -> dict[str, Any] | None:
+    raw_deltas = obj.get("deltas")
+    if not isinstance(raw_deltas, dict):
+        # Backwards-compatible parser for older flat LLM outputs.
+        raw_deltas = {key: obj.get(key, 0.0) for key in DELTA_FIELDS}
+
+    deltas: dict[str, float] = {}
+    for key in DELTA_FIELDS:
         try:
-            deltas[key] = float(value)
+            value = float(raw_deltas.get(key, 0.0))
         except (TypeError, ValueError):
-            continue
+            return None
+        deltas[key] = _clamp_delta(value)
+
+    for sector_key in SECTOR_DELTA_FIELDS:
+        if sector_key in raw_deltas or sector_key in obj:
+            try:
+                deltas[sector_key] = _clamp_delta(float(raw_deltas.get(sector_key, obj.get(sector_key, 0.0))))
+            except (TypeError, ValueError):
+                return None
+
     try:
-        confidence = float(obj.get("confidence", 0.65))
+        confidence = _clip(float(obj.get("confidence", 0.65)), 0.0, 1.0)
     except (TypeError, ValueError):
-        confidence = 0.65
-    reasoning = str(obj.get("causal_reasoning", "Structured economic impact inferred."))
-    return {
-        "deltas": deltas,
-        "confidence": max(0.0, min(1.0, confidence)),
-        "causal_reasoning": reasoning[:500],
-    }
+        return None
+
+    reasoning = str(
+        obj.get("reasoning")
+        or obj.get("causal_reasoning")
+        or "Structured economic interpretation applied."
+    )[:500]
+    event_type = _normalize_event_type(str(obj.get("event_type", "demand shock")))
+    sectors = _normalize_sectors(obj.get("affected_sectors"), deltas)
+    return _canonical_payload(
+        deltas=deltas,
+        confidence=confidence,
+        reasoning=reasoning,
+        affected_sectors=sectors,
+        event_type=event_type,
+    )
 
 
 def _fallback_event_payload(event_text: str) -> dict[str, Any]:
-    text = event_text.lower()
-    deltas: dict[str, float] = {}
+    text = normalize_event_text(event_text)
+    deltas: dict[str, float] = _zero_deltas()
     reasons: list[str] = []
+    sectors: set[str] = set()
+    event_types: list[str] = []
+    magnitude = _infer_magnitude(text)
 
-    if any(word in text for word in ["oil", "opec", "energy", "middle east"]):
-        deltas.update(
+    if "oil" in text and any(word in text for word in ["crisis", "cut", "shortage", "opec", "middle east"]):
+        _add_deltas(
+            deltas,
             {
-                "oil_price": 0.45,
-                "energy_cost": 0.32,
-                "market_volatility": 0.22,
-                "inflation": 0.025,
-                "trade_tension": 0.12,
-                "cooperation_index": -0.08,
-                "geopolitical_risk": 0.18,
-                "supply_chain_stability": -0.12,
-                "sector_energy": 0.25,
-                "sector_manufacturing": -0.08,
-            }
+                "oil_price": max(0.2, magnitude),
+                "energy_cost": max(0.15, magnitude * 0.75),
+                "market_volatility": max(0.1, magnitude * 0.5),
+                "inflation": 0.05,
+                "geopolitical_risk": max(0.1, magnitude * 0.5),
+                "cooperation_index": -0.04,
+            },
         )
-        reasons.append("Energy supply risk raises oil prices, costs, and uncertainty.")
-    if any(word in text for word in ["drought", "food", "crop", "grain", "famine"]):
-        deltas.update({
-            "food_index": 0.35,
-            "resource_scarcity": 0.28,
-            "market_volatility": 0.12,
-            "supply_chain_stability": -0.18,
-            "sector_agriculture": -0.3,
-        })
-        reasons.append("Food supply disruption increases scarcity and commodity prices.")
-    if any(word in text for word in ["peace", "ceasefire", "agreement", "cooperation", "climate pact"]):
-        deltas.update({
-            "cooperation_index": 0.28,
-            "trade_tension": -0.2,
-            "market_volatility": -0.12,
-            "geopolitical_risk": -0.18,
-            "supply_chain_stability": 0.12,
-        })
-        reasons.append("Diplomatic cooperation lowers tension and improves coordination incentives.")
-    if any(word in text for word in ["rate", "central bank", "basis points", "inflation hike"]):
-        deltas.update({
-            "interest_rate": 0.0075,
-            "market_volatility": 0.12,
-            "gdp_growth": -0.015,
-            "gold_price": -0.04,
-            "liquidity_index": -0.12,
-            "credit_spread": 0.1,
-            "sector_finance": -0.08,
-        })
-        reasons.append("Tighter monetary policy slows growth and increases market uncertainty.")
-    if any(word in text for word in ["crash", "recession", "bank failure", "panic"]):
-        deltas.update({
-            "market_volatility": 0.35,
-            "gdp_growth": -0.06,
-            "gold_price": 0.2,
-            "cooperation_index": -0.06,
-            "liquidity_index": -0.25,
-            "credit_spread": 0.2,
-            "sector_finance": -0.35,
-            "sector_technology": -0.2,
-        })
-        reasons.append("Financial stress increases volatility and defensive positioning.")
-    if any(word in text for word in ["trade war", "tariff", "sanction", "embargo"]):
-        deltas.update({
-            "trade_tension": 0.35,
-            "market_volatility": 0.2,
-            "cooperation_index": -0.25,
-            "resource_scarcity": 0.15,
-            "geopolitical_risk": 0.22,
-            "supply_chain_stability": -0.18,
-            "sector_manufacturing": -0.18,
-        })
+        sectors.update({"energy", "manufacturing"})
+        event_types.extend(["supply shock", "geopolitical"])
+        reasons.append("Oil supply stress raises energy costs and inflation while increasing geopolitical risk.")
+
+    if any(word in text for word in ["peace", "agreement", "ceasefire", "cooperation", "climate pact"]):
+        _add_deltas(
+            deltas,
+            {
+                "cooperation_index": 0.2,
+                "market_volatility": -0.1,
+                "trade_tension": -0.15,
+                "geopolitical_risk": -0.1,
+                "supply_chain_stability": 0.08,
+            },
+        )
+        sectors.update({"energy", "manufacturing", "finance"})
+        event_types.append("cooperation / agreement")
+        reasons.append("Diplomatic agreement improves coordination and reduces uncertainty.")
+
+    if "rate hike" in text or "central bank raises" in text or ("central bank" in text and "raise" in text):
+        _add_deltas(
+            deltas,
+            {
+                "interest_rate": 0.02,
+                "liquidity_index": -0.1,
+                "gdp_growth": -0.05,
+                "credit_spread": 0.06,
+                "market_volatility": 0.05,
+            },
+        )
+        sectors.update({"finance", "technology"})
+        event_types.append("policy")
+        reasons.append("Tighter monetary policy drains liquidity and slows growth expectations.")
+
+    if any(phrase in text for phrase in ["supply chain", "drought", "shortage"]):
+        _add_deltas(
+            deltas,
+            {
+                "food_index": 0.15,
+                "resource_scarcity": 0.2,
+                "supply_chain_stability": -0.2,
+                "market_volatility": 0.08,
+            },
+        )
+        sectors.update({"agriculture", "manufacturing"})
+        event_types.append("supply shock")
+        reasons.append("Supply disruption raises scarcity and weakens logistics stability.")
+
+    if any(word in text for word in ["crash", "recession", "bank failure", "panic", "systemic"]):
+        _add_deltas(
+            deltas,
+            {
+                "market_volatility": 0.3,
+                "gdp_growth": -0.06,
+                "gold_price": 0.15,
+                "cooperation_index": -0.06,
+                "liquidity_index": -0.2,
+                "credit_spread": 0.2,
+            },
+        )
+        sectors.update({"finance", "technology"})
+        event_types.append("systemic crisis")
+        reasons.append("Systemic stress increases volatility, tightens credit, and pushes agents defensive.")
+
+    if any(word in text for word in ["tariff", "sanction", "embargo"]) or "trade war" in text:
+        _add_deltas(
+            deltas,
+            {
+                "trade_tension": 0.25,
+                "market_volatility": 0.15,
+                "cooperation_index": -0.18,
+                "resource_scarcity": 0.1,
+                "geopolitical_risk": 0.18,
+                "supply_chain_stability": -0.15,
+            },
+        )
+        sectors.update({"manufacturing", "finance"})
+        event_types.append("geopolitical")
         reasons.append("Trade conflict reduces cooperation and raises supply friction.")
 
-    if not deltas:
-        deltas = {"market_volatility": 0.04}
+    if not any(abs(value) > 1e-9 for value in deltas.values()):
+        deltas["market_volatility"] = 0.04
+        sectors.add("finance")
+        event_types.append("demand shock")
         reasons.append("Event has uncertain but limited market impact.")
 
+    _apply_cross_variable_effects(deltas)
+    return _canonical_payload(
+        deltas=deltas,
+        confidence=0.58,
+        reasoning=" ".join(reasons) or "Rule-based interpretation applied.",
+        affected_sectors=sorted(sectors),
+        event_type=_choose_event_type(event_types),
+    )
+
+
+def _zero_deltas() -> dict[str, float]:
+    return {key: 0.0 for key in DELTA_FIELDS}
+
+
+def _empty_payload(reasoning: str, confidence: float = 0.0) -> dict[str, Any]:
+    return _canonical_payload(
+        deltas=_zero_deltas(),
+        confidence=confidence,
+        reasoning=reasoning,
+        affected_sectors=[],
+        event_type="demand shock",
+    )
+
+
+def _canonical_payload(
+    *,
+    deltas: dict[str, float],
+    confidence: float,
+    reasoning: str,
+    affected_sectors: list[str],
+    event_type: str,
+) -> dict[str, Any]:
+    canonical = _zero_deltas()
+    for key, value in deltas.items():
+        if key in DELTA_FIELDS or key in SECTOR_DELTA_FIELDS:
+            canonical[key] = _clamp_delta(value)
+    sectors = _normalize_sectors(affected_sectors, canonical)
+    clean_reasoning = reasoning.strip() or "Rule-based interpretation applied."
     return {
-        "deltas": deltas,
-        "confidence": 0.58,
-        "causal_reasoning": " ".join(reasons),
+        "deltas": canonical,
+        "confidence": _clip(confidence, 0.0, 1.0),
+        "reasoning": clean_reasoning[:500],
+        "causal_reasoning": clean_reasoning[:500],
+        "affected_sectors": sectors,
+        "event_type": _normalize_event_type(event_type),
     }
+
+
+def _add_deltas(deltas: dict[str, float], updates: dict[str, float]) -> None:
+    for key, value in updates.items():
+        if key in deltas:
+            deltas[key] = _clamp_delta(deltas[key] + float(value))
+
+
+def _apply_cross_variable_effects(deltas: dict[str, float]) -> None:
+    oil = max(0.0, deltas.get("oil_price", 0.0))
+    energy = max(0.0, deltas.get("energy_cost", 0.0))
+    volatility = max(0.0, deltas.get("market_volatility", 0.0))
+    scarcity = max(0.0, deltas.get("resource_scarcity", 0.0))
+    if oil:
+        deltas["energy_cost"] = _clamp_delta(deltas["energy_cost"] + 0.5 * oil)
+    if energy:
+        deltas["inflation"] = _clamp_delta(deltas["inflation"] + 0.12 * energy)
+    if volatility:
+        deltas["cooperation_index"] = _clamp_delta(deltas["cooperation_index"] - 0.15 * volatility)
+        deltas["liquidity_index"] = _clamp_delta(deltas["liquidity_index"] - 0.08 * volatility)
+    if scarcity:
+        deltas["market_volatility"] = _clamp_delta(deltas["market_volatility"] + 0.1 * scarcity)
+
+
+def _infer_magnitude(text: str) -> float:
+    if any(word in text for word in ["severe", "catastrophic", "massive"]):
+        return 0.35
+    if any(word in text for word in ["major", "large", "significant"]):
+        return 0.2
+    if any(word in text for word in ["moderate", "medium"]):
+        return 0.1
+    if any(word in text for word in ["slight", "minor", "small"]):
+        return 0.05
+    return 0.2
+
+
+def _normalize_sectors(raw_sectors: Any, deltas: dict[str, float]) -> list[str]:
+    sectors: set[str] = set()
+    if isinstance(raw_sectors, list):
+        sectors.update(str(item).lower().strip() for item in raw_sectors if str(item).lower().strip() in VALID_SECTORS)
+    if abs(deltas.get("oil_price", 0.0)) > 0 or abs(deltas.get("energy_cost", 0.0)) > 0:
+        sectors.add("energy")
+    if abs(deltas.get("food_index", 0.0)) > 0 or abs(deltas.get("resource_scarcity", 0.0)) > 0:
+        sectors.add("agriculture")
+    if abs(deltas.get("credit_spread", 0.0)) > 0 or abs(deltas.get("liquidity_index", 0.0)) > 0:
+        sectors.add("finance")
+    if abs(deltas.get("supply_chain_stability", 0.0)) > 0 or abs(deltas.get("trade_tension", 0.0)) > 0:
+        sectors.add("manufacturing")
+    return sorted(sectors)
+
+
+def _normalize_event_type(event_type: str) -> str:
+    clean = event_type.lower().strip()
+    if clean in VALID_EVENT_TYPES:
+        return clean
+    if "cooperation" in clean or "agreement" in clean:
+        return "cooperation / agreement"
+    if "policy" in clean or "rate" in clean:
+        return "policy"
+    if "crisis" in clean:
+        return "systemic crisis"
+    if "geo" in clean:
+        return "geopolitical"
+    if "supply" in clean:
+        return "supply shock"
+    return "demand shock"
+
+
+def _choose_event_type(event_types: list[str]) -> str:
+    priority = ["systemic crisis", "policy", "cooperation / agreement", "geopolitical", "supply shock", "demand shock"]
+    for item in priority:
+        if item in event_types:
+            return item
+    return "demand shock"
+
+
+def _clamp_delta(value: float) -> float:
+    return _clip(float(value), -DELTA_LIMIT, DELTA_LIMIT)
+
+
+def _clip(value: float, low: float, high: float) -> float:
+    return max(low, min(high, float(value)))

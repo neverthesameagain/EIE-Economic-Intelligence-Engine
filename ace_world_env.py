@@ -14,10 +14,10 @@ from ace_text_inject import parse_event_payload
 ROUND_TYPES = ["competitive", "cooperative", "resource"]
 
 CLAMP_RANGES = {
-    "oil_price": (0.1, 3.0),
-    "gold_price": (0.1, 3.0),
-    "food_index": (0.1, 3.0),
-    "energy_cost": (0.1, 3.0),
+    "oil_price": (0.5, 2.5),
+    "gold_price": (0.5, 2.5),
+    "food_index": (0.5, 2.5),
+    "energy_cost": (0.5, 2.5),
     "interest_rate": (0.0, 0.25),
     "inflation": (0.0, 0.5),
     "gdp_growth": (-0.2, 0.2),
@@ -202,8 +202,11 @@ class WorldState:
             "event": event_text,
             "deltas": deltas,
             "endogenous_deltas": endogenous,
-            "reasoning": payload.get("causal_reasoning", ""),
+            "reasoning": payload.get("reasoning", payload.get("causal_reasoning", "")),
+            "causal_reasoning": payload.get("causal_reasoning", payload.get("reasoning", "")),
             "confidence": payload.get("confidence", 0.0),
+            "event_type": payload.get("event_type", "demand shock"),
+            "affected_sectors": payload.get("affected_sectors", []),
             "probabilities_after": self.derive_round_probabilities(),
         }
         self.causal_log.append(trace)
@@ -249,7 +252,13 @@ class ACEWorldEnv:
         if actions is None:
             probs = self.world.derive_round_probabilities()
             actions = [
-                agent.choose_fallback_action(probs, self.round_number, available_ids, observations[agent.agent_id])
+                agent.choose_fallback_action(
+                    probs,
+                    self.round_number,
+                    available_ids,
+                    observations[agent.agent_id],
+                    rng=self.rng,
+                )
                 for agent in self.agents
             ]
 
@@ -261,6 +270,7 @@ class ACEWorldEnv:
                     self.round_number,
                     available_ids,
                     observations[agent.agent_id],
+                    rng=self.rng,
                 )
             )
 
@@ -286,11 +296,13 @@ class ACEWorldEnv:
                 agent_profile=agent,
             )
             reward_info["market_return"] = market_return
+            reward_info["market"] = market_return
             reward_info["total"] += market_return
             if agent.name.startswith("CentralBank"):
                 reward_info["stability"] = self._stability_bonus()
                 reward_info["total"] += reward_info["stability"]
             reward_info["social_bonus"] = social_bonus.get(agent.agent_id, 0.0)
+            reward_info["social"] = reward_info["social_bonus"]
             reward_info["total"] += reward_info["social_bonus"]
             success = bool(reward_info["total"] >= 0.8)
             other_actions = {
@@ -306,6 +318,14 @@ class ACEWorldEnv:
                 reward=reward_info["total"],
                 success=success,
                 other_actions=other_actions,
+                reward_components={
+                    "total": reward_info["total"],
+                    "inference": reward_info.get("inference", 0.0),
+                    "action": reward_info.get("action", 0.0),
+                    "social": reward_info.get("social", 0.0),
+                    "market": reward_info.get("market", 0.0),
+                    "behavior": reward_info.get("behavior", 0.0),
+                },
             )
             results.append(
                 {
@@ -375,6 +395,8 @@ class ACEWorldEnv:
                     "portfolio": agent.portfolio,
                     "beliefs": agent.beliefs,
                     "trust_scores": agent.trust_scores,
+                    "opponent_memory": agent.opponent_memory,
+                    "q_values": agent.q_values,
                     "memory": agent.self_memory[-3:],
                 }
                 for agent in self.agents
@@ -437,7 +459,7 @@ class ACEWorldEnv:
                 target_action = actions.get(target_id, {}).get("action")
                 if target_action in {"accept_alliance", "propose_alliance", "execute_contract", "allocate_resources"}:
                     self.alliances.add(pair)
-                    self._raise_trust(agent_id, target_id, 0.12)
+                    self._raise_trust(agent_id, target_id, 0.1)
                     social_bonus[agent_id] += 0.35
                     social_bonus[target_id] += 0.35
                     self.interaction_log.append(
@@ -457,7 +479,7 @@ class ACEWorldEnv:
                     )
             elif action == "accept_alliance" or (action == "execute_contract" and ground_truth == "cooperative"):
                 self.alliances.add(pair)
-                self._raise_trust(agent_id, target_id, 0.08)
+                self._raise_trust(agent_id, target_id, 0.1)
                 social_bonus[agent_id] += 0.2
                 social_bonus[target_id] += 0.2
                 self.interaction_log.append(f"🤝 {names[agent_id]} stabilized cooperation with {names[target_id]} → trust rises.")
@@ -470,7 +492,7 @@ class ACEWorldEnv:
                     f"💥 {names[agent_id]} BETRAYED {names[target_id]} → short-term gain, trust collapses."
                 )
             elif action == "challenge":
-                self._drop_trust(agent_id, target_id, 0.08)
+                self._drop_trust(agent_id, target_id, 0.1)
                 winner = agent_id if self.rng.random() < 0.55 else target_id
                 loser = target_id if winner == agent_id else agent_id
                 social_bonus[winner] += 0.35
