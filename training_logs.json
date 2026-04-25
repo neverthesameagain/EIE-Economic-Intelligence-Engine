@@ -1,0 +1,487 @@
+{
+  "n_episodes": 80,
+  "rounds_per_episode": 10,
+  "seed": 7,
+  "episodes": [
+    {
+      "episode": 0,
+      "phase": "early",
+      "total_reward": 1.52,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 1,
+      "phase": "early",
+      "total_reward": -0.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 2,
+      "phase": "early",
+      "total_reward": -2.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 3,
+      "phase": "early",
+      "total_reward": -2.4799999999999995,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 4,
+      "phase": "early",
+      "total_reward": 10.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 5,
+      "phase": "early",
+      "total_reward": 5.96,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 6,
+      "phase": "early",
+      "total_reward": 2.9599999999999995,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 7,
+      "phase": "early",
+      "total_reward": -0.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 8,
+      "phase": "early",
+      "total_reward": -9.360000000000001,
+      "inference_accuracy": 0.1
+    },
+    {
+      "episode": 9,
+      "phase": "early",
+      "total_reward": 1.5199999999999996,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 10,
+      "phase": "early",
+      "total_reward": 1.52,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 11,
+      "phase": "early",
+      "total_reward": -2.9200000000000004,
+      "inference_accuracy": 0.2
+    },
+    {
+      "episode": 12,
+      "phase": "early",
+      "total_reward": 7.399999999999999,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 13,
+      "phase": "early",
+      "total_reward": 9.399999999999999,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 14,
+      "phase": "early",
+      "total_reward": -2.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 15,
+      "phase": "early",
+      "total_reward": -0.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 16,
+      "phase": "early",
+      "total_reward": 0.52,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 17,
+      "phase": "early",
+      "total_reward": -0.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 18,
+      "phase": "early",
+      "total_reward": 6.959999999999999,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 19,
+      "phase": "early",
+      "total_reward": -2.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 20,
+      "phase": "early",
+      "total_reward": -2.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 21,
+      "phase": "early",
+      "total_reward": -2.9200000000000004,
+      "inference_accuracy": 0.2
+    },
+    {
+      "episode": 22,
+      "phase": "early",
+      "total_reward": -11.800000000000002,
+      "inference_accuracy": 0.0
+    },
+    {
+      "episode": 23,
+      "phase": "early",
+      "total_reward": -1.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 24,
+      "phase": "early",
+      "total_reward": -1.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 25,
+      "phase": "early",
+      "total_reward": 1.96,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 26,
+      "phase": "middle",
+      "total_reward": 3.96,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 27,
+      "phase": "middle",
+      "total_reward": 8.399999999999999,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 28,
+      "phase": "middle",
+      "total_reward": 7.4,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 29,
+      "phase": "middle",
+      "total_reward": -0.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 30,
+      "phase": "middle",
+      "total_reward": 7.4,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 31,
+      "phase": "middle",
+      "total_reward": 2.9599999999999995,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 32,
+      "phase": "middle",
+      "total_reward": 4.959999999999999,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 33,
+      "phase": "middle",
+      "total_reward": -1.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 34,
+      "phase": "middle",
+      "total_reward": 5.959999999999999,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 35,
+      "phase": "middle",
+      "total_reward": 16.28,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 36,
+      "phase": "middle",
+      "total_reward": 7.399999999999999,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 37,
+      "phase": "middle",
+      "total_reward": 11.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 38,
+      "phase": "middle",
+      "total_reward": -1.48,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 39,
+      "phase": "middle",
+      "total_reward": 3.9599999999999995,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 40,
+      "phase": "middle",
+      "total_reward": -0.4800000000000004,
+      "inference_accuracy": 0.3
+    },
+    {
+      "episode": 41,
+      "phase": "middle",
+      "total_reward": 14.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 42,
+      "phase": "middle",
+      "total_reward": 17.28,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 43,
+      "phase": "middle",
+      "total_reward": 10.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 44,
+      "phase": "middle",
+      "total_reward": 11.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 45,
+      "phase": "middle",
+      "total_reward": 5.4,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 46,
+      "phase": "middle",
+      "total_reward": 11.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 47,
+      "phase": "middle",
+      "total_reward": 8.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 48,
+      "phase": "middle",
+      "total_reward": 6.399999999999999,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 49,
+      "phase": "middle",
+      "total_reward": 18.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 50,
+      "phase": "middle",
+      "total_reward": 4.959999999999999,
+      "inference_accuracy": 0.4
+    },
+    {
+      "episode": 51,
+      "phase": "middle",
+      "total_reward": 12.84,
+      "inference_accuracy": 0.6
+    },
+    {
+      "episode": 52,
+      "phase": "late",
+      "total_reward": 14.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 53,
+      "phase": "late",
+      "total_reward": 16.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 54,
+      "phase": "late",
+      "total_reward": 17.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 55,
+      "phase": "late",
+      "total_reward": 22.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 56,
+      "phase": "late",
+      "total_reward": 26.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 57,
+      "phase": "late",
+      "total_reward": 26.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 58,
+      "phase": "late",
+      "total_reward": 25.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 59,
+      "phase": "late",
+      "total_reward": 13.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 60,
+      "phase": "late",
+      "total_reward": 15.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 61,
+      "phase": "late",
+      "total_reward": 17.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 62,
+      "phase": "late",
+      "total_reward": 18.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 63,
+      "phase": "late",
+      "total_reward": 18.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 64,
+      "phase": "late",
+      "total_reward": 23.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 65,
+      "phase": "late",
+      "total_reward": 23.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 66,
+      "phase": "late",
+      "total_reward": 7.399999999999998,
+      "inference_accuracy": 0.5
+    },
+    {
+      "episode": 67,
+      "phase": "late",
+      "total_reward": 23.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 68,
+      "phase": "late",
+      "total_reward": 23.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 69,
+      "phase": "late",
+      "total_reward": 20.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 70,
+      "phase": "late",
+      "total_reward": 23.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 71,
+      "phase": "late",
+      "total_reward": 28.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 72,
+      "phase": "late",
+      "total_reward": 20.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 73,
+      "phase": "late",
+      "total_reward": 18.28,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 74,
+      "phase": "late",
+      "total_reward": 23.600000000000005,
+      "inference_accuracy": 1.0
+    },
+    {
+      "episode": 75,
+      "phase": "late",
+      "total_reward": 15.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 76,
+      "phase": "late",
+      "total_reward": 24.160000000000004,
+      "inference_accuracy": 0.9
+    },
+    {
+      "episode": 77,
+      "phase": "late",
+      "total_reward": 18.720000000000002,
+      "inference_accuracy": 0.8
+    },
+    {
+      "episode": 78,
+      "phase": "late",
+      "total_reward": 12.280000000000001,
+      "inference_accuracy": 0.7
+    },
+    {
+      "episode": 79,
+      "phase": "late",
+      "total_reward": 19.720000000000002,
+      "inference_accuracy": 0.8
+    }
+  ]
+}
