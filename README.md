@@ -34,6 +34,8 @@ Press **🚀 Run Full Demo** or follow the guided path:
 ## Runtime Files
 
 - `app.py`: Hugging Face Space entrypoint
+- `openenv.yaml`: OpenEnv metadata pointing to `openenv_ace:ACEOpenMultiAgentEnv`
+- `openenv_ace.py`: OpenEnv-compatible adapter around the current simulator
 - `demo_gradio.py`: judge-facing UI
 - `ace_text_inject.py`: robust text-to-economy engine
 - `ace_world_env.py`: world model and multi-agent environment

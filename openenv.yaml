@@ -1,0 +1,20 @@
+name: ace-plus-plus
+version: "2.0.0"
+description: >
+  Adaptive multi-agent economic simulation where natural language events change
+  macroeconomic conditions, agents infer hidden regimes, and trust/opponent
+  models drive strategic learning over repeated interaction.
+entry: openenv_ace:ACEOpenMultiAgentEnv
+app_entry: app.py
+theme: multi-agent
+tags:
+  - multi-agent
+  - world-modeling
+  - text-to-economy
+  - hidden-state
+  - POMDP
+  - trust-dynamics
+  - lightweight-rl
+reward_type: dense
+observation_type: partial
+action_type: structured-json
