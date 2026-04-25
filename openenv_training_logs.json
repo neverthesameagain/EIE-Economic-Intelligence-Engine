@@ -7,361 +7,541 @@
       "episode": 0,
       "phase": "random",
       "total_reward": -2.4799999999999995,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -2.4799999999999995,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 1,
       "phase": "random",
       "total_reward": -1.4800000000000004,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -1.4800000000000004,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 2,
       "phase": "random",
       "total_reward": -1.48,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -1.48,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 3,
       "phase": "random",
       "total_reward": 1.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 1.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 4,
       "phase": "random",
       "total_reward": 11.84,
-      "inference_accuracy": 0.6
+      "inference_accuracy": 0.6,
+      "mean_agent_reward": 11.84,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 5,
       "phase": "random",
       "total_reward": -4.92,
-      "inference_accuracy": 0.2
+      "inference_accuracy": 0.2,
+      "mean_agent_reward": -4.92,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 6,
       "phase": "random",
       "total_reward": 2.9599999999999995,
-      "inference_accuracy": 0.4
+      "inference_accuracy": 0.4,
+      "mean_agent_reward": 2.9599999999999995,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 7,
       "phase": "random",
       "total_reward": 8.399999999999999,
-      "inference_accuracy": 0.5
+      "inference_accuracy": 0.5,
+      "mean_agent_reward": 8.399999999999999,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 8,
       "phase": "random",
       "total_reward": 4.96,
-      "inference_accuracy": 0.4
+      "inference_accuracy": 0.4,
+      "mean_agent_reward": 4.96,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 9,
       "phase": "random",
       "total_reward": 0.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 0.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 10,
       "phase": "random",
       "total_reward": -9.360000000000001,
-      "inference_accuracy": 0.1
+      "inference_accuracy": 0.1,
+      "mean_agent_reward": -9.360000000000001,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 11,
       "phase": "random",
       "total_reward": 2.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 2.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 12,
       "phase": "random",
       "total_reward": 1.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 1.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 13,
       "phase": "random",
       "total_reward": -2.4799999999999995,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -2.4799999999999995,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 14,
       "phase": "random",
       "total_reward": -2.92,
-      "inference_accuracy": 0.2
+      "inference_accuracy": 0.2,
+      "mean_agent_reward": -2.92,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 15,
       "phase": "random",
       "total_reward": 0.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 0.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 16,
       "phase": "random",
       "total_reward": -4.920000000000001,
-      "inference_accuracy": 0.2
+      "inference_accuracy": 0.2,
+      "mean_agent_reward": -4.920000000000001,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 17,
       "phase": "random",
       "total_reward": -4.92,
-      "inference_accuracy": 0.2
+      "inference_accuracy": 0.2,
+      "mean_agent_reward": -4.92,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 18,
       "phase": "random",
       "total_reward": 1.52,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 1.52,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 19,
       "phase": "mixed",
       "total_reward": 1.96,
-      "inference_accuracy": 0.4
+      "inference_accuracy": 0.4,
+      "mean_agent_reward": 1.96,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 20,
       "phase": "mixed",
       "total_reward": 14.280000000000001,
-      "inference_accuracy": 0.7
+      "inference_accuracy": 0.7,
+      "mean_agent_reward": 14.280000000000001,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 21,
       "phase": "mixed",
       "total_reward": -1.4800000000000004,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -1.4800000000000004,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 22,
       "phase": "mixed",
       "total_reward": 9.84,
-      "inference_accuracy": 0.6
+      "inference_accuracy": 0.6,
+      "mean_agent_reward": 9.84,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 23,
       "phase": "mixed",
       "total_reward": 13.84,
-      "inference_accuracy": 0.6
+      "inference_accuracy": 0.6,
+      "mean_agent_reward": 13.84,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 24,
       "phase": "mixed",
       "total_reward": -0.48,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -0.48,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 25,
       "phase": "mixed",
       "total_reward": 4.959999999999999,
-      "inference_accuracy": 0.4
+      "inference_accuracy": 0.4,
+      "mean_agent_reward": 4.959999999999999,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 26,
       "phase": "mixed",
       "total_reward": 18.720000000000002,
-      "inference_accuracy": 0.8
+      "inference_accuracy": 0.8,
+      "mean_agent_reward": 18.720000000000002,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 27,
       "phase": "mixed",
       "total_reward": 16.28,
-      "inference_accuracy": 0.7
+      "inference_accuracy": 0.7,
+      "mean_agent_reward": 16.28,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 28,
       "phase": "mixed",
       "total_reward": 7.399999999999998,
-      "inference_accuracy": 0.5
+      "inference_accuracy": 0.5,
+      "mean_agent_reward": 7.399999999999998,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 29,
       "phase": "mixed",
       "total_reward": 5.4,
-      "inference_accuracy": 0.5
+      "inference_accuracy": 0.5,
+      "mean_agent_reward": 5.4,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 30,
       "phase": "mixed",
       "total_reward": 5.959999999999999,
-      "inference_accuracy": 0.4
+      "inference_accuracy": 0.4,
+      "mean_agent_reward": 5.959999999999999,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 31,
       "phase": "mixed",
       "total_reward": 19.720000000000002,
-      "inference_accuracy": 0.8
+      "inference_accuracy": 0.8,
+      "mean_agent_reward": 19.720000000000002,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 32,
       "phase": "mixed",
       "total_reward": 24.160000000000004,
-      "inference_accuracy": 0.9
+      "inference_accuracy": 0.9,
+      "mean_agent_reward": 24.160000000000004,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 33,
       "phase": "mixed",
       "total_reward": 0.5199999999999996,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": 0.5199999999999996,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 34,
       "phase": "mixed",
       "total_reward": 14.280000000000001,
-      "inference_accuracy": 0.7
+      "inference_accuracy": 0.7,
+      "mean_agent_reward": 14.280000000000001,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 35,
       "phase": "mixed",
       "total_reward": 11.84,
-      "inference_accuracy": 0.6
+      "inference_accuracy": 0.6,
+      "mean_agent_reward": 11.84,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 36,
       "phase": "mixed",
       "total_reward": 15.280000000000001,
-      "inference_accuracy": 0.7
+      "inference_accuracy": 0.7,
+      "mean_agent_reward": 15.280000000000001,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 37,
       "phase": "mixed",
       "total_reward": -2.4800000000000004,
-      "inference_accuracy": 0.3
+      "inference_accuracy": 0.3,
+      "mean_agent_reward": -2.4800000000000004,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 38,
       "phase": "mixed",
       "total_reward": -9.800000000000002,
-      "inference_accuracy": 0.0
+      "inference_accuracy": 0.0,
+      "mean_agent_reward": -9.800000000000002,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 39,
       "phase": "grounded",
       "total_reward": 24.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 24.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 40,
       "phase": "grounded",
       "total_reward": 23.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 23.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 41,
       "phase": "grounded",
       "total_reward": 24.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 24.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 42,
       "phase": "grounded",
       "total_reward": 24.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 24.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 43,
       "phase": "grounded",
       "total_reward": 25.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 25.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 44,
       "phase": "grounded",
       "total_reward": 27.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 27.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 45,
       "phase": "grounded",
       "total_reward": 23.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 23.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 46,
       "phase": "grounded",
       "total_reward": 24.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 24.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 47,
       "phase": "grounded",
       "total_reward": 27.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 27.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 48,
       "phase": "grounded",
       "total_reward": 26.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 26.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 49,
       "phase": "grounded",
       "total_reward": 25.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 25.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 50,
       "phase": "grounded",
       "total_reward": 27.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 27.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 51,
       "phase": "grounded",
       "total_reward": 24.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 24.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 52,
       "phase": "grounded",
       "total_reward": 23.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 23.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 53,
       "phase": "grounded",
       "total_reward": 26.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 26.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 54,
       "phase": "grounded",
       "total_reward": 25.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 25.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 55,
       "phase": "grounded",
       "total_reward": 28.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 28.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 56,
       "phase": "grounded",
       "total_reward": 29.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 29.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 57,
       "phase": "grounded",
       "total_reward": 26.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 26.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 58,
       "phase": "grounded",
       "total_reward": 27.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 27.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     },
     {
       "episode": 59,
       "phase": "grounded",
       "total_reward": 26.600000000000005,
-      "inference_accuracy": 1.0
+      "inference_accuracy": 1.0,
+      "mean_agent_reward": 26.600000000000005,
+      "alliance_count": 0,
+      "mean_trust": 0.5
     }
   ]
 }

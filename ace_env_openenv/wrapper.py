@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from env import ACEEnv
+from env import ACEEnv, MultiAgentACEEnv
 
 try:
     from openenv import Environment  # type: ignore
@@ -56,6 +56,52 @@ class ACEOpenEnv(Environment):
 
     def step(self, action: str) -> tuple[dict[str, Any], float, bool, dict[str, Any]]:
         return self._env.step(action)
+
+    def state(self) -> dict[str, Any]:
+        return self._env.state()
+
+
+class ACEOpenMultiAgentEnv(Environment):
+    """
+    OpenEnv adapter around the ACE++ multi-agent environment.
+
+    The action is a list of JSON strings, one per agent. This keeps the wrapper
+    close to the Gym/OpenEnv surface while exposing coalition, trust, and
+    multi-agent reward dynamics for training/evaluation scripts.
+    """
+
+    def __init__(
+        self,
+        *,
+        num_agents: int = 3,
+        num_rounds: int = 10,
+        inference_weight: float = 1.2,
+        social_weight: float = 0.2,
+        seed: Optional[int] = None,
+        round_type_schedule: Optional[list[str]] = None,
+        id_shuffle: bool = True,
+        god_mode: bool = True,
+        difficulty: str = "medium",
+        adaptation_weight: float = 0.1,
+    ) -> None:
+        self._env = MultiAgentACEEnv(
+            num_agents=num_agents,
+            num_rounds=num_rounds,
+            inference_weight=inference_weight,
+            social_weight=social_weight,
+            seed=seed,
+            round_type_schedule=round_type_schedule,
+            id_shuffle=id_shuffle,
+            god_mode=god_mode,
+            difficulty=difficulty,
+            adaptation_weight=adaptation_weight,
+        )
+
+    def reset(self) -> dict[str, Any]:
+        return self._env.reset()
+
+    def step(self, actions: list[str]) -> tuple[dict[str, Any], list[float], bool, dict[str, Any]]:
+        return self._env.step(actions)
 
     def state(self) -> dict[str, Any]:
         return self._env.state()

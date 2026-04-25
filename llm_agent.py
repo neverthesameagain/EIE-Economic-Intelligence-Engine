@@ -28,7 +28,11 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Optional
 
+from env_config import load_local_env
 from env import ACEEnv, ROUND_TYPES
+
+
+load_local_env()
 
 
 SYSTEM_INSTRUCTION = (

@@ -1,3 +1,3 @@
-from .wrapper import ACEOpenEnv, Environment
+from .wrapper import ACEOpenEnv, ACEOpenMultiAgentEnv, Environment
 
-__all__ = ["ACEOpenEnv", "Environment"]
+__all__ = ["ACEOpenEnv", "ACEOpenMultiAgentEnv", "Environment"]
