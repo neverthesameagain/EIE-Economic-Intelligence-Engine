@@ -27,7 +27,7 @@ Press **🚀 Run Full Demo** or follow the guided path:
 
 - Text-to-economy translation using the new `ace_text_inject.py` pipeline
 - Bounded world updates with causal trace and confidence
-- Four differentiated agents with beliefs, memory, trust, Q-values, and opponent models
+- Seven differentiated agents with beliefs, memory, trust, Q-values, and opponent models
 - Alliances, challenges, betrayals, retaliation, and cooperation
 - Lightweight Q-style adaptation without heavy training loops
 

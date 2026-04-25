@@ -263,6 +263,27 @@ Output ONLY valid JSON:
                 ("propose_alliance", {"target_id": partner}),
                 ("accept_alliance", {"target_id": partner}),
             ]
+        if "Logistics" in self.company_type:
+            return [
+                ("allocate_resources", {"amount": 70}),
+                ("execute_contract", {"team_id": partner}),
+                ("propose_alliance", {"target_id": partner}),
+                ("submit_bid", {"amount": 45, "partner_id": risky_partner}),
+            ]
+        if "Insurance" in self.company_type:
+            return [
+                ("allocate_resources", {"amount": 55}),
+                ("execute_contract", {"team_id": partner}),
+                ("submit_bid", {"amount": 35, "partner_id": risky_partner}),
+                ("reject_alliance", {"target_id": risky_partner}),
+            ]
+        if "Technology" in self.company_type:
+            return [
+                ("submit_bid", {"amount": 65}),
+                ("execute_contract", {"team_id": partner}),
+                ("propose_alliance", {"target_id": partner}),
+                ("challenge", {"target_id": risky_partner}),
+            ]
         if "Hedge Fund" in self.company_type:
             return [
                 ("submit_bid", {"amount": 85}),
@@ -414,6 +435,21 @@ Output ONLY valid JSON:
                 return 1.0
             if action in {"challenge", "betray", "submit_bid"}:
                 return -0.8
+        if "Logistics" in self.company_type:
+            if action in {"allocate_resources", "execute_contract", "propose_alliance"}:
+                return 0.9
+            if action == "betray":
+                return -0.5
+        if "Insurance" in self.company_type:
+            if action in {"allocate_resources", "execute_contract", "reject_alliance"}:
+                return 0.9
+            if action in {"challenge", "betray"}:
+                return -0.7
+        if "Technology" in self.company_type:
+            if action in {"submit_bid", "execute_contract", "propose_alliance"}:
+                return 0.85
+            if action == "challenge" and predicted_round == "competitive":
+                return 0.45
         return 0.0
 
     def _decision_factors(
@@ -512,6 +548,42 @@ AGENT_PROFILES = [
         stake_food=-0.5,
         stake_cooperation=0.9,
         risk_tolerance=0.1,
+    ),
+    AgentProfile(
+        agent_id=4,
+        name="LogiChain Global",
+        company_type="Logistics & Supply Chain Operator",
+        emoji="🚢",
+        primary_objective="Preserve shipping capacity and arbitrage supply-chain bottlenecks",
+        stake_oil=-0.4,
+        stake_gold=0.0,
+        stake_food=-0.3,
+        stake_cooperation=0.6,
+        risk_tolerance=0.45,
+    ),
+    AgentProfile(
+        agent_id=5,
+        name="ShieldRe Insurance",
+        company_type="Insurance & Risk Underwriter",
+        emoji="🛡️",
+        primary_objective="Minimise systemic losses by hedging volatility and avoiding unreliable partners",
+        stake_oil=-0.2,
+        stake_gold=0.4,
+        stake_food=-0.1,
+        stake_cooperation=0.4,
+        risk_tolerance=0.25,
+    ),
+    AgentProfile(
+        agent_id=6,
+        name="NovaTech Systems",
+        company_type="Technology Infrastructure Firm",
+        emoji="💻",
+        primary_objective="Capture growth contracts while maintaining compute and infrastructure resilience",
+        stake_oil=-0.3,
+        stake_gold=0.1,
+        stake_food=0.0,
+        stake_cooperation=0.2,
+        risk_tolerance=0.65,
     ),
 ]
 

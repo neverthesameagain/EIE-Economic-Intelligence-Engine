@@ -1048,7 +1048,7 @@ def build_ui():
                     "Market Return",
                     "Reasoning / Memory",
                 ],
-                row_count=(4, "fixed"),
+                row_count=(7, "dynamic"),
                 column_count=(13, "fixed"),
                 label="Detailed reward table",
             )
