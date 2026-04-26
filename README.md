@@ -18,12 +18,15 @@ EIE Economic Intelligence Engine is a live multi-agent economic simulation where
 
 ## Demo Flow
 
-Press **🚀 Run Full Demo** or follow the guided path:
+Use the main command bar:
 
-1. Inject `oil crisis hits Middle East`
-2. Run one round
-3. Run five rounds
-4. Watch beliefs, trust, actions, rewards, and resources evolve
+1. Pick a sample event or type your own event.
+2. Choose `Agent-Based RL` or `LLM-Based RL`.
+3. In the provider dropdown, choose either `fallback` or `groq`.
+4. Confirm the model, then press `Run ->`.
+5. Watch world state, agent actions, AI reasoning, rewards, trust, and behavior shift.
+
+`Agent-Based RL` works with no keys. `LLM-Based RL` uses Groq and reads credentials from environment variables or Hugging Face Space secrets. There is intentionally no API key textbox in the UI.
 
 ## What The Demo Shows
 
@@ -48,11 +51,7 @@ Older prototypes, notebooks, logs, and training artifacts are preserved in `lega
 
 ## Secrets
 
-The app runs without API keys using deterministic fallback logic. For live LLM decisions, set these Space secrets:
-
-- `LLM_PROVIDER=groq` and `GROQ_API_KEY`
-
-For the current deployment, the recommended setup is:
+The app runs without API keys using deterministic fallback logic. For live `LLM-Based RL`, set these variables:
 
 ```bash
 LLM_PROVIDER=groq
@@ -60,4 +59,14 @@ GROQ_API_KEY=your_key
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-The model can be LLaMA, but the active client is Groq. The current runtime does **not** use `OPENAI_API_KEY` or `OPENAI_BASE_URL`; those only appear in legacy files preserved under `legacy/`.
+For local development, put them in `.env`:
+
+```bash
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_key
+GROQ_MODEL=llama-3.3-70b-versatile
+```
+
+For Hugging Face deployment, add the same names under **Space settings -> Repository secrets**, then restart or factory rebuild the Space.
+
+The model can be LLaMA, but the active client is Groq. The visible demo does **not** expose Anthropic, `OPENAI_API_KEY`, or `OPENAI_BASE_URL`; old OpenAI-style config only appears in legacy files preserved under `legacy/`.

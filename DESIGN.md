@@ -59,6 +59,7 @@ The Space metadata in `README.md` points to `app_file: app.py`.
 
 - event input and preset scenarios
 - provider selector: `fallback`, `groq`
+- model textbox for the Groq model name
 - raw model debug checkbox
 - event injection
 - single-round execution
@@ -181,12 +182,6 @@ Default Groq model in the demo:
 
 ```text
 llama-3.3-70b-versatile
-```
-
-Default Anthropic model:
-
-```text
-claude-sonnet-4-20250514
 ```
 
 ### Event Schema
@@ -660,20 +655,18 @@ This makes OpenEnv use the same simulator as the demo rather than a separate env
 
 ### Dependencies
 
-`requirements.txt` currently includes:
+The active demo path relies on:
 
 - `gradio>=6.0.0`
-- `anthropic>=0.20.0`
 - `groq`
 - `plotly>=5.0.0`
-- `pandas>=2.0.0`
 - `matplotlib>=3.8.0`
 
 ### Secrets
 
 Fallback mode requires no secrets.
 
-Live LLM event parsing and decisions use:
+The visible UI intentionally does not include an API-key textbox. Live `LLM-Based RL` reads credentials from environment variables locally or from Hugging Face Space repository secrets:
 
 ```text
 LLM_PROVIDER=groq
@@ -681,7 +674,9 @@ GROQ_API_KEY=...
 GROQ_MODEL=llama-3.3-70b-versatile
 ```
 
-The deployed app should not require OpenAI credentials.
+Local development uses the same values in `.env`. Hugging Face deployment uses the same values under Space settings -> Repository secrets, followed by a restart or factory rebuild.
+
+The deployed app should not require OpenAI credentials, and the judge-facing provider selector only exposes `fallback` and `groq`.
 
 ## 18. Reliability Guarantees
 
@@ -794,7 +789,7 @@ Owns the economic world and multi-agent environment.
 Translates natural language events into validated economic deltas.
 
 - Uses a strict event JSON schema for LLM providers.
-- Supports Groq and Anthropic when keys are configured.
+- Supports Groq when keys are configured.
 - Falls back to deterministic rule-based parsing when LLM output is missing or invalid.
 - Clamps all deltas and world values to keep the simulation stable.
 - Returns a causal trace containing deltas, confidence, affected sectors, event type, and reasoning.
@@ -1060,7 +1055,7 @@ Space starts app.py
 app.py imports demo_gradio.build_ui()
 demo_gradio creates ACEWorldEnv state
 user drives event injection and rounds
-optional Groq/Anthropic secrets enable live LLM decisions
+optional Groq secrets enable live LLM decisions
 fallback logic keeps the demo alive without secrets
 ```
 
