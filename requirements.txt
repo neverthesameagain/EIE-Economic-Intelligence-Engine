@@ -3,3 +3,4 @@ anthropic>=0.20.0
 groq
 plotly>=5.0.0
 pandas>=2.0.0
+matplotlib>=3.8.0

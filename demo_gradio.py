@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 from html import escape
 from pathlib import Path
 from typing import Any
@@ -39,6 +38,7 @@ def load_local_env(path: str = ".env") -> None:
 load_local_env()
 
 from ace_agents import AgentProfile
+from ace_llm_policy import llm_policy
 from ace_text_inject import call_groq_chat_completion, describe_impact
 from ace_world_env import ACEWorldEnv
 
@@ -277,21 +277,6 @@ def make_fresh_env() -> ACEWorldEnv:
     return ACEWorldEnv()
 
 
-def parse_agent_json(raw: str) -> dict[str, Any] | None:
-    clean = re.sub(r"```(?:json)?", "", raw).strip().strip("`")
-    decoder = json.JSONDecoder()
-    for idx, char in enumerate(clean):
-        if char != "{":
-            continue
-        try:
-            obj, _ = decoder.raw_decode(clean[idx:])
-        except json.JSONDecodeError:
-            continue
-        if isinstance(obj, dict):
-            return obj
-    return None
-
-
 def normalize_provider(provider: str | None) -> str:
     value = (provider or os.getenv("LLM_PROVIDER", "fallback")).lower().strip()
     return value if value in PROVIDERS else "fallback"
@@ -319,78 +304,49 @@ def llm_or_fallback_decision(
             import anthropic
             client = anthropic.Anthropic()
 
-            user_prompt = "\n".join([
-                f"Upcoming round: {env.round_number + 1}",
-                f"Visible alliances: {sorted([list(pair) for pair in env.alliances])}",
-                "Recent global round history:",
-                json.dumps(env.round_history[-3:], indent=2),
-                "Return ONLY valid JSON.",
-            ])
+            def anthropic_generator(prompt: str) -> str:
+                response = client.messages.create(
+                    model=ANTHROPIC_MODEL,
+                    max_tokens=260,
+                    system="Return ONLY valid JSON. No markdown. No explanation.",
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.content[0].text.strip()
 
-            response = client.messages.create(
-                model=ANTHROPIC_MODEL,
-                max_tokens=260,
-                system=agent.system_prompt(env.world.to_prompt_str()),
-                messages=[{"role": "user", "content": user_prompt}],
+            return llm_policy(
+                env,
+                agent,
+                fallback_fn=lambda: fallback,
+                generator=anthropic_generator,
+                debug=debug,
             )
-
-            raw = response.content[0].text.strip()
-            print_raw_llm(agent.name, raw, debug)
-            parsed = parse_agent_json(raw)
-
-            return merge_decision(parsed, fallback)
 
         except Exception:
             return fallback
 
     if provider == "groq" and os.getenv("GROQ_API_KEY"):
         try:
-            messages = [
-                {"role": "system", "content": agent.system_prompt(env.world.to_prompt_str())},
-                {"role": "user", "content": "\n".join([
-                    f"Upcoming round: {env.round_number + 1}",
-                    f"Visible alliances: {sorted([list(pair) for pair in env.alliances])}",
-                    "Recent global round history:",
-                    json.dumps(env.round_history[-3:], indent=2),
-                    "Return ONLY valid JSON. No explanation.",
-                ])}
-            ]
+            def groq_generator(prompt: str) -> str:
+                return call_groq_chat_completion(
+                    messages=[{"role": "user", "content": prompt}],
+                    model=GROQ_MODEL,
+                    temperature=0.2,
+                    max_tokens=160,
+                )
 
-            raw = call_groq_chat_completion(
-                messages=messages,
-                model=GROQ_MODEL,
-                temperature=0.35,
-                max_tokens=320,
+            return llm_policy(
+                env,
+                agent,
+                fallback_fn=lambda: fallback,
+                generator=groq_generator,
+                debug=debug,
             )
-            print_raw_llm(agent.name, raw, debug)
-
-            return merge_decision(parse_agent_json(raw or ""), fallback)
 
         except Exception:
             return fallback
 
     return fallback
 
-
-def print_raw_llm(label: str, raw: str, debug: bool) -> None:
-    if not debug:
-        return
-    print(f"\n[LLM RAW:{label}]")
-    print(raw)
-    print(f"[/LLM RAW:{label}]\n")
-
-
-def merge_decision(parsed: dict[str, Any] | None, fallback: dict[str, Any]) -> dict[str, Any]:
-    if not isinstance(parsed, dict):
-        return fallback
-    return {
-        "predicted_round": parsed.get("predicted_round", fallback["predicted_round"]),
-        "action": parsed.get("action", fallback["action"]),
-        "parameters": parsed.get("parameters", fallback["parameters"]),
-        "beliefs": parsed.get("beliefs", fallback.get("beliefs", {})),
-        "factors": parsed.get("factors", fallback.get("factors", {})),
-        "reasoning": parsed.get("reasoning", fallback["reasoning"]),
-    }
 
 def render_world(env: ACEWorldEnv) -> tuple[Any, ...]:
     world = env.world
