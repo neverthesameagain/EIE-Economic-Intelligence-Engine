@@ -58,7 +58,7 @@ The Space metadata in `README.md` points to `app_file: app.py`.
 `demo_gradio.py` owns the judge-facing UI:
 
 - event input and preset scenarios
-- provider selector: `fallback`, `groq`, `anthropic`
+- provider selector: `fallback`, `groq`
 - raw model debug checkbox
 - event injection
 - single-round execution
@@ -172,10 +172,9 @@ This makes the world a lightweight POMDP: agents do not directly know the sample
 
 ### Provider Path
 
-`parse_event_payload()` supports:
+The judge-facing demo exposes:
 
 - Groq when `LLM_PROVIDER=groq` and `GROQ_API_KEY` are set.
-- Anthropic when `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` are set.
 - deterministic fallback rules otherwise.
 
 Default Groq model in the demo:
@@ -674,20 +673,12 @@ This makes OpenEnv use the same simulator as the demo rather than a separate env
 
 Fallback mode requires no secrets.
 
-Live LLM event parsing and decisions can use:
+Live LLM event parsing and decisions use:
 
 ```text
 LLM_PROVIDER=groq
 GROQ_API_KEY=...
 GROQ_MODEL=llama-3.3-70b-versatile
-```
-
-or:
-
-```text
-LLM_PROVIDER=anthropic
-ANTHROPIC_API_KEY=...
-ANTHROPIC_MODEL=claude-sonnet-4-20250514
 ```
 
 The deployed app should not require OpenAI credentials.
@@ -912,7 +903,7 @@ This makes the event-to-economy translation visible rather than a black box.
 For each agent:
 
 - If provider is `fallback`, the agent uses `choose_fallback_action()`.
-- If provider is `groq` or `anthropic`, `llm_or_fallback_decision()` calls the shared `llm_policy()`.
+- If provider is `groq`, `llm_or_fallback_decision()` calls the shared `llm_policy()`.
 - If the provider errors, returns invalid JSON, or omits required fields, the fallback action is used.
 
 The structured action schema is:

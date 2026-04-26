@@ -2,7 +2,6 @@
 
 Run:
     LLM_PROVIDER=groq GROQ_API_KEY=... python demo_gradio.py
-    LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=... python demo_gradio.py
 
 The app also works without an API key by using deterministic adaptive fallback
 agents, so the demo never crashes during judging.
@@ -51,6 +50,7 @@ from ace_world_env import ACEWorldEnv
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 PROVIDERS = {"fallback", "groq", "anthropic"}
+UI_PROVIDER_CHOICES = ["fallback", "groq"]
 PROVIDER_KEY_ENV = {
     "groq": "GROQ_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
@@ -641,22 +641,19 @@ def apply_model_choice(provider: str | None, model_choice: str | None = None) ->
         os.environ["GROQ_MODEL"] = model
 
 
-def apply_llm_runtime_config(provider: str | None, model_choice: str | None = None, api_key: str | None = None) -> tuple[bool, str]:
-    """Apply temporary UI-provided LLM settings without persisting secrets."""
+def apply_llm_runtime_config(provider: str | None, model_choice: str | None = None) -> tuple[bool, str]:
+    """Apply selected provider/model and verify required env secrets exist."""
     provider = normalize_provider(provider)
     apply_model_choice(provider, model_choice)
 
-    key = (api_key or "").strip()
     key_env = PROVIDER_KEY_ENV.get(provider)
-    if key and key_env:
-        os.environ[key_env] = key
 
     if provider == "fallback":
-        return False, "Choose Groq or Anthropic for LLM-Based RL, then enter a model and API key."
+        return False, "Choose Groq or Anthropic for LLM-Based RL. API keys should be set as environment variables or Hugging Face Space secrets."
     if key_env and os.getenv(key_env):
         return True, f"LLM ready: {provider} / {resolve_model(provider, model_choice)}"
     if key_env:
-        return False, f"Missing {key_env}. Paste it in the API key field to run LLM-Based RL."
+        return False, f"Missing {key_env}. Add it to your .env file locally or to Hugging Face Space secrets, then restart/rebuild."
     return False, "Unsupported provider selected."
 
 
@@ -1538,9 +1535,9 @@ def render_trust(env: ACEWorldEnv) -> dict[str, float]:
     return trust
 
 
-def inject_event(event_text: str, provider: str, debug_llm: bool, env: ACEWorldEnv | None, model_choice: str | None = None, api_key: str | None = None):
+def inject_event(event_text: str, provider: str, debug_llm: bool, env: ACEWorldEnv | None, model_choice: str | None = None):
     env = env or make_fresh_env()
-    apply_llm_runtime_config(provider, model_choice, api_key)
+    apply_llm_runtime_config(provider, model_choice)
     text = event_text.strip() or "No event provided."
     trace = env.apply_event(text, provider=normalize_provider(provider), debug=bool(debug_llm))
     impact = describe_impact(trace["deltas"], text, trace["reasoning"])
@@ -1574,10 +1571,10 @@ def select_provider_model(provider: str) -> str:
     return resolve_model(provider)
 
 
-def run_simulation(event_text: str, provider: str, model_choice: str, api_key: str, debug_llm: bool, env: ACEWorldEnv | None, policy_mode: str):
+def run_simulation(event_text: str, provider: str, model_choice: str, debug_llm: bool, env: ACEWorldEnv | None, policy_mode: str):
     env = env or make_fresh_env()
     provider = normalize_provider(provider)
-    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice, api_key)
+    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice)
     if policy_mode == "LLM-Based RL" and not llm_ready:
         return (
             env,
@@ -1593,7 +1590,7 @@ def run_simulation(event_text: str, provider: str, model_choice: str, api_key: s
             render_interactions(env),
             render_behavior_evolution(env),
             render_optimal_comparison(None),
-            f"{llm_status}\n\nLLM-Based RL needs a live key because it samples model-generated strategies before selecting the best action.",
+            f"{llm_status}\n\nLLM-Based RL needs a live provider secret because it samples model-generated strategies before selecting the best action.",
             resource_plot(env),
             world_plot(env),
             render_history(env),
@@ -1607,7 +1604,7 @@ def run_simulation(event_text: str, provider: str, model_choice: str, api_key: s
     else:
         impact = f"Continuing scenario: {text}"
 
-    round_result = run_round(env, provider, debug_llm, policy_mode, model_choice, api_key)
+    round_result = run_round(env, provider, debug_llm, policy_mode, model_choice)
     env = round_result[0]
     return (
         env,
@@ -1616,10 +1613,10 @@ def run_simulation(event_text: str, provider: str, model_choice: str, api_key: s
     )
 
 
-def run_round(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mode: str = "Agent-Based RL", model_choice: str | None = None, api_key: str | None = None):
+def run_round(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mode: str = "Agent-Based RL", model_choice: str | None = None):
     env = env or make_fresh_env()
     provider = normalize_provider(provider)
-    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice, api_key)
+    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice)
     training_report = "Agent-Based RL used: agents acted through learned fallback policy, Q-values, trust, memory, and opponent models."
 
     if policy_mode == "LLM-Based RL":
@@ -1637,7 +1634,7 @@ def run_round(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mo
                 render_interactions(env),
                 render_behavior_evolution(env),
                 render_optimal_comparison(None),
-                f"{llm_status}\n\nPaste a Groq or Anthropic key in the command bar, confirm the model, then run again.",
+                f"{llm_status}\n\nSet the provider key in .env or Hugging Face Space secrets, confirm provider/model, then run again.",
                 resource_plot(env),
                 world_plot(env),
                 render_history(env),
@@ -1677,10 +1674,10 @@ def run_round(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mo
     )
 
 
-def run_five_rounds(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mode: str = "Agent-Based RL", model_choice: str | None = None, api_key: str | None = None):
+def run_five_rounds(env: ACEWorldEnv | None, provider: str, debug_llm: bool, policy_mode: str = "Agent-Based RL", model_choice: str | None = None):
     env = env or make_fresh_env()
     provider = normalize_provider(provider)
-    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice, api_key)
+    llm_ready, llm_status = apply_llm_runtime_config(provider, model_choice)
     last = None
     reports = []
     for _ in range(5):
@@ -1696,7 +1693,7 @@ def run_five_rounds(env: ACEWorldEnv | None, provider: str, debug_llm: bool, pol
     god_mode = f"Ran 5 rounds. Last hidden round: {ground_truth.upper()}."
     training_report = "\n\n--- ROUND SAMPLE TRACE ---\n\n".join(reports[-2:]) if reports else "Agent-Based RL used: repeated rounds updated agent memory, trust, opponent models, and Q-values."
     if policy_mode == "LLM-Based RL" and not llm_ready:
-        training_report = f"{llm_status}\n\nPaste a Groq or Anthropic key in the command bar, confirm the model, then run again."
+        training_report = f"{llm_status}\n\nSet the provider key in .env or Hugging Face Space secrets, confirm provider/model, then run again."
         god_mode = "Waiting for LLM credentials."
     return (
         env,
@@ -1719,14 +1716,14 @@ def run_five_rounds(env: ACEWorldEnv | None, provider: str, debug_llm: bool, pol
     )
 
 
-def run_full_demo(provider: str, debug_llm: bool, env: ACEWorldEnv | None, policy_mode: str = "Agent-Based RL", model_choice: str | None = None, api_key: str | None = None):
+def run_full_demo(provider: str, debug_llm: bool, env: ACEWorldEnv | None, policy_mode: str = "Agent-Based RL", model_choice: str | None = None):
     env = make_fresh_env()
-    injected = inject_event(PERFECT_DEMO_EVENT, provider, debug_llm, env, model_choice, api_key)
+    injected = inject_event(PERFECT_DEMO_EVENT, provider, debug_llm, env, model_choice)
     env = injected[0]
     impact = injected[1]
-    round_result = run_round(env, provider, debug_llm, policy_mode, model_choice, api_key)
+    round_result = run_round(env, provider, debug_llm, policy_mode, model_choice)
     env = round_result[0]
-    final_result = run_five_rounds(env, provider, debug_llm, policy_mode, model_choice, api_key)
+    final_result = run_five_rounds(env, provider, debug_llm, policy_mode, model_choice)
     return (
         final_result[0],
         impact,
@@ -1799,8 +1796,8 @@ def build_ui():
                 reset_btn = gr.Button("Reset", variant="secondary", scale=1)
             with gr.Row():
                 use_llm = gr.Dropdown(
-                    choices=["fallback", "groq", "anthropic"],
-                    value=os.getenv("LLM_PROVIDER", "fallback"),
+                    choices=UI_PROVIDER_CHOICES,
+                    value=os.getenv("LLM_PROVIDER", "fallback") if os.getenv("LLM_PROVIDER", "fallback") in UI_PROVIDER_CHOICES else "fallback",
                     label="Provider",
                     scale=1,
                 )
@@ -1810,14 +1807,8 @@ def build_ui():
                     placeholder="llama-3.3-70b-versatile",
                     scale=2,
                 )
-                api_key = gr.Textbox(
-                    label="API Key",
-                    type="password",
-                    placeholder="Paste Groq or Anthropic key for LLM-Based RL",
-                    scale=2,
-                )
                 debug_llm = gr.Checkbox(label="Debug", value=False, scale=1)
-            gr.HTML('<div class="small-note">Agent-Based RL uses Q-values, trust, memory, and opponent models. LLM-Based RL requires a live Groq/Anthropic key and samples model strategies before selecting the highest-reward action.</div>')
+            gr.HTML('<div class="small-note">Agent-Based RL uses Q-values, trust, memory, and opponent models. LLM-Based RL uses provider/model here and reads keys from environment variables or Hugging Face Space secrets.</div>')
 
         flow_strip = gr.HTML(render_flow_strip(make_fresh_env()))
 
@@ -1837,7 +1828,7 @@ def build_ui():
             gr.HTML('<div class="small-note">Multiple strategies are evaluated via reward-based selection on copied environments.</div>')
 
         with gr.Accordion("System Console", open=True, elem_classes=["terminal-panel"]):
-            gr.HTML('<div class="small-note">Provider/model are selected in the command bar. Agent-Based RL runs without model calls; LLM-Based RL uses the selected model.</div>')
+            gr.HTML('<div class="small-note">Provider/model are selected in the command bar. Agent-Based RL runs without model calls; LLM-Based RL uses the selected model plus env/Space secrets.</div>')
             impact_box = gr.Textbox(label="Immediate Economic Impact", lines=5, interactive=False)
             economic_flow = gr.Textbox(label="Event → Economy → Incentives", lines=6, interactive=False)
             round_prob_bars = gr.Textbox(label="Hidden Round Pressure", lines=6, interactive=False)
@@ -1976,7 +1967,7 @@ def build_ui():
         )
         run_btn.click(
             run_simulation,
-            inputs=[event_input, use_llm, model_choice, api_key, debug_llm, env_state, policy_mode],
+            inputs=[event_input, use_llm, model_choice, debug_llm, env_state, policy_mode],
             outputs=[env_state, impact_box, *world_outputs, *story_outputs, *sim_outputs],
         )
         phase1_train_btn.click(

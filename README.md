@@ -48,10 +48,9 @@ Older prototypes, notebooks, logs, and training artifacts are preserved in `lega
 
 ## Secrets
 
-The app runs without API keys using deterministic fallback logic. For live LLM decisions, set one of these Space secrets:
+The app runs without API keys using deterministic fallback logic. For live LLM decisions, set these Space secrets:
 
 - `LLM_PROVIDER=groq` and `GROQ_API_KEY`
-- `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`
 
 For the current deployment, the recommended setup is:
 
