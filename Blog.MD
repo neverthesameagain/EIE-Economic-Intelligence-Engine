@@ -53,7 +53,7 @@ We wanted a system where:
 
 So the project became less like a static dashboard and more like a small playable world.
 
-![Event Input UI](./Screenshot%202026-04-26%20at%203.19.43%E2%80%AFPM.png)
+![Event Input UI](https://raw.githubusercontent.com/neverthesameagain/ACEhack/dcf5423/Screenshot%202026-04-26%20at%203.19.43%E2%80%AFPM.png)
 
 *You start with a simple headline. The system handles everything else — from interpretation to simulation.*
 
@@ -105,7 +105,7 @@ oil crisis hits Middle East
 
 That is the whole product philosophy: make the reasoning visible.
 
-![Causal Trace](./Screenshot%202026-04-26%20at%203.17.54%E2%80%AFPM.png)
+![Causal Trace](https://raw.githubusercontent.com/neverthesameagain/ACEhack/dcf5423/Screenshot%202026-04-26%20at%203.17.54%E2%80%AFPM.png)
 
 *Each event is translated into structured economic signals — with explicit reasoning, affected sectors, and confidence.*
 
@@ -188,7 +188,7 @@ This makes the agents feel less like independent buttons and more like character
 
 Sometimes agents are right. Sometimes they are wrong. That is intentional. A good simulation should show uncertainty, not pretend everyone sees the world perfectly.
 
-![Agent Behavior](./Screenshot%202026-04-26%20at%203.13.04%E2%80%AFPM.png)
+![Agent Behavior](https://raw.githubusercontent.com/neverthesameagain/ACEhack/dcf5423/Screenshot%202026-04-26%20at%203.13.04%E2%80%AFPM.png)
 
 *Agents don't just act — they respond to incentives, form alliances, and adapt based on trust and past outcomes.*
 
@@ -383,7 +383,7 @@ Then press Run.
 
 The world shifts. Market stress rises. Cooperation weakens. Agents choose alliances, bids, contracts, or challenges. The system reveals the hidden round type. Some agents get rewarded. Some miss the optimal action. Trust changes. Resources move. The next round starts from a different world than the first.
 
-![Round Summary](./Screenshot%202026-04-26%20at%203.15.21%E2%80%AFPM.png)
+![Round Summary](https://raw.githubusercontent.com/neverthesameagain/ACEhack/dcf5423/Screenshot%202026-04-26%20at%203.15.21%E2%80%AFPM.png)
 
 *After each round, the system summarizes what actually happened — including hidden dynamics and whether agents acted optimally.*
 
